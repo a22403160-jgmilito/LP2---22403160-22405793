@@ -55,17 +55,14 @@ public class GameManager {
             if (nome == null || nome.trim().isEmpty()) {
                 return false;
             }
-
             String linguagens = row[2];
             if (linguagens == null) {
                 linguagens = ""; // pode estar vazio
             }
-
             String cor = row[3];
             if (cor == null || !coresValidas.contains(cor) || !cores.add(cor)) {
                 return false;
             }
-
             // Se tudo válido, cria o Player temporariamente
             tempPlayers.add(new Player(id, nome, linguagens, cor));
         }
