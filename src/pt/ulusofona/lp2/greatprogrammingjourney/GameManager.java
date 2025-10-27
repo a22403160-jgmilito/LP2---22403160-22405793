@@ -71,7 +71,7 @@ public class GameManager {
             tempPlayers.add(new Player(id, nome, linguagens, cor));
         }
 
-        // Se chegou aqui, tudo foi validado → grava no estado interno
+        // se chegou aqui, tudo foi validado → grava no estado interno
         players = tempPlayers;
         boardSize = worldSize;
         // TODOS COMEÇAM NA CASA 1
