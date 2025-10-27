@@ -14,6 +14,10 @@ public class GameManager {
     // guarda o tamanho do tabuleiro
     private int boardSize = 0;
 
+    private int totalTurns = 0;
+
+    private Integer winnerId = null;
+
     private int currentPlayerIndex = 0;
 
     // posição atual de cada jogador: id -> posição
@@ -75,6 +79,8 @@ public class GameManager {
         for (Player p : players) {
             playerPos.put(p.getId(), 1);
         }
+        totalTurns = 0;
+        winnerId = null;
         return true;
     }
 
@@ -191,16 +197,85 @@ public class GameManager {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         }
 
+        // Atualiza contador de turnos
+        totalTurns++;
+
+        // Regista vencedor se alguém chegou à meta
+        if (novaPos == boardSize && winnerId == null) {
+            winnerId = id;
+        }
+
         return true;
     }
 
-    public boolean gameIsOver(){
-        return false;
+    public boolean gameIsOver() {
+        if (boardSize <= 0 || playerPos.isEmpty()) {
+            return false;
+        }
+
+        for (int pos : playerPos.values()) {
+            if (pos == boardSize) {
+                return true; // Pelo menos um jogador chegou à meta
+            }
+        }
+        return false; // Nenhum jogador chegou ainda
     }
 
-    public ArrayList<String> getGameResults(){
-        return null;
+
+    public ArrayList<String> getGameResults() {
+        ArrayList<String> out = new ArrayList<>();
+
+        // TÍTULO
+        out.add("THE GREAT PROGRAMMING JOURNEY");
+        out.add(""); // linha vazia
+
+        // NR. DE TURNOS
+        out.add("NR. DE TURNOS");
+        out.add(String.valueOf(totalTurns));
+        out.add(""); // linha vazia
+
+        // VENCEDOR
+        out.add("VENCEDOR");
+        String vencedorNome = "";
+        if (winnerId != null) {
+            for (Player p : players) {
+                if (p.getId() == winnerId) {
+                    vencedorNome = p.getNome();
+                    break;
+                }
+            }
+        }
+        out.add(vencedorNome);
+        out.add(""); // linha vazia
+
+        // RESTANTES
+        out.add("RESTANTES");
+
+        ArrayList<Player> restantes = new ArrayList<>();
+        for (Player p : players) {
+            if (winnerId == null || p.getId() != winnerId) {
+                restantes.add(p);
+            }
+        }
+
+        // ordenar por posição desc; em empate, por nome asc
+        restantes.sort((a, b) -> {
+            int posA = playerPos.getOrDefault(a.getId(), 1);
+            int posB = playerPos.getOrDefault(b.getId(), 1);
+            if (posA != posB) {
+                return Integer.compare(posB, posA); // desc
+            }
+            return a.getNome().compareToIgnoreCase(b.getNome());
+        });
+
+        for (Player p : restantes) {
+            int pos = playerPos.getOrDefault(p.getId(), 1);
+            out.add(p.getNome() + " " + pos);
+        }
+
+        return out;
     }
+
     // nao obrigatorio
     public JPanel getAuthorsPanel(){
         return null;
