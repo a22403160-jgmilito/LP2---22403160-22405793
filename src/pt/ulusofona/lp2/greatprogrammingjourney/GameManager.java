@@ -9,6 +9,7 @@ public class GameManager {
 
     public GameManager() {
     }
+
     ArrayList<Player> players = new ArrayList<>();
 
     // guarda o tamanho do tabuleiro
@@ -140,7 +141,7 @@ public class GameManager {
         return null;
     }
 
-    public String[] getSlotInfo(int position){
+    public String[] getSlotInfo(int position) {
         if (boardSize <= 0 || position < 1 || position > boardSize) {
             return null;
         }
@@ -155,8 +156,16 @@ public class GameManager {
                 ids.add(String.valueOf(p.getId()));
             }
         }
-        return ids.isEmpty() ? null : ids.toArray(new String[0]);
+
+        if (ids.isEmpty()) {
+            return null;
+        }
+
+        // Junta todos os IDs numa única string separados por vírgula
+        String todosIds = String.join(",", ids);
+        return new String[]{ todosIds };
     }
+
 
     public int getCurrentPlayerID(){
         if (players == null || players.isEmpty()) {
