@@ -167,7 +167,7 @@ public class GameManager {
             return null;
         }
 
-        // Junta todos os IDs numa única string separados por vírgula
+        // junta todos os IDs numa única string separados por vírgula
         String todosIds = String.join(",", ids);
         return new String[]{ todosIds };
     }
