@@ -130,11 +130,7 @@ public class GameManager {
             if (p.getId() == id) {
                 int pos = playerPos.getOrDefault(id, 1);
                 String estado;
-                if (winnerId != null && id == winnerId) {
-                    estado = "Chegou à Meta";
-                } else {
                     estado = "Em Jogo";
-                }
 
                 return p.getId() + " | "
                         + p.getNome() + " | "
