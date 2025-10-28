@@ -22,12 +22,16 @@ public class Player {
         return nome;
     }
     public String getLinguagens() {
-        if (linguagens == null || linguagens.isEmpty()) return "";
+        if (linguagens == null || linguagens.isEmpty()) {
+            return "";
+        }
         String[] partes = linguagens.split(";");
         ArrayList<String> lista = new ArrayList<>();
         for (String s : partes) {
             s = s.trim();
-            if (!s.isEmpty()) lista.add(s);
+            if (!s.isEmpty()) {
+                lista.add(s);
+            }
         }
         lista.sort(String.CASE_INSENSITIVE_ORDER);
         return String.join("; ", lista);

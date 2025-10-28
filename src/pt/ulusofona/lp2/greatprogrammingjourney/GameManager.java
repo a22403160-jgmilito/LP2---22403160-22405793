@@ -105,7 +105,8 @@ public class GameManager {
 
     public String[] getProgrammerInfo(int id){
         if (players == null || players.isEmpty()) {
-            return new String[] {"", "", "", ""};
+            return null;
+            //return new String[] {"", "", "", ""};
         }
         for (Player p : players) {
             if (p.getId() == id) {
@@ -117,7 +118,8 @@ public class GameManager {
                 };
             }
         }
-        return new String[] {"", "", "", ""};
+        return null;
+        //return new String[] {"", "", "", ""};
     }
 
     public String getProgrammerInfoAsStr(int id){
@@ -171,7 +173,7 @@ public class GameManager {
     }
 
     public boolean moveCurrentPlayer(int nrSpaces){
-        if (players == null || players.isEmpty() || boardSize <= 0) {
+        if (players == null || players.isEmpty() || boardSize <= 0 || nrSpaces <= 0) {
             return false;
         }
 
