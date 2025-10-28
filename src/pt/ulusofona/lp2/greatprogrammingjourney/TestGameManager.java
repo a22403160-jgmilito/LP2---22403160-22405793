@@ -16,6 +16,6 @@ public class TestGameManager {
                 {"1234", "Pedro",  "C+", "Purple"},
                 {"12345", "Joao",  "C+", "Brown"}
         }, 50));
-        assertEquals(Arrays.toString(manager.getSlotInfo(1)),"[1234,12345]");
+        assertEquals(Arrays.toString(manager.getSlotInfo(0)),"[1234,12345]");
     }
 }

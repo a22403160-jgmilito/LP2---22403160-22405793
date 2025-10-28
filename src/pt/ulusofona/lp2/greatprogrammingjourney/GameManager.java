@@ -78,7 +78,7 @@ public class GameManager {
         // TODOS COMEÇAM NA CASA 1
         playerPos.clear();
         for (Player p : players) {
-            playerPos.put(p.getId(), 1);
+            playerPos.put(p.getId(), 0);
         }
         totalTurns = 0;
         winnerId = null;
@@ -128,8 +128,14 @@ public class GameManager {
 
         for (Player p : players) {
             if (p.getId() == id) {
-                int pos = playerPos.getOrDefault(id, 1);
-                String estado = (boardSize > 0 && pos == boardSize) ? "Chegou à Meta" : "Em Jogo";
+                int pos = playerPos.getOrDefault(id, 0);
+                String estado;
+                if (winnerId != null && id == winnerId) {
+                    estado = "Chegou à Meta";
+                } else {
+                    estado = "Em Jogo";
+                }
+
 
                 return p.getId() + " | "
                         + p.getNome() + " | "
@@ -142,7 +148,7 @@ public class GameManager {
     }
 
     public String[] getSlotInfo(int position) {
-        if (boardSize <= 0 || position < 1 || position > boardSize) {
+        if (boardSize <= 0 || position < 0 || position > boardSize) {
             return null;
         }
         if (players == null || players.isEmpty()) {
@@ -151,7 +157,7 @@ public class GameManager {
 
         ArrayList<String> ids = new ArrayList<>();
         for (Player p : players) {
-            int pos = playerPos.getOrDefault(p.getId(), 1);
+            int pos = playerPos.getOrDefault(p.getId(), 0);
             if (pos == position) {
                 ids.add(String.valueOf(p.getId()));
             }
@@ -223,7 +229,7 @@ public class GameManager {
         }
 
         for (int pos : playerPos.values()) {
-            if (pos == boardSize) {
+            if (pos >= boardSize) {
                 return true; // Pelo menos um jogador chegou à meta
             }
         }
