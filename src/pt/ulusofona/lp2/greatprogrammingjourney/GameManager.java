@@ -180,7 +180,7 @@ public class GameManager {
         return players.get(currentPlayerIndex).getId();
     }
 
-    public boolean moveCurrentPlayer(int nrSpaces){
+    public boolean moveCurrentPlayer(int nrSpaces) {
         if (players == null || players.isEmpty() || boardSize <= 0 || nrSpaces <= 0) {
             return false;
         }
@@ -193,24 +193,28 @@ public class GameManager {
         int posAtual = playerPos.getOrDefault(id, 1);
         int novaPos = posAtual + nrSpaces;
 
-        // impede ultrapassar o final
+        // se passar da meta, volta o excedente
         if (novaPos > boardSize) {
-            novaPos = boardSize;
+            int excedente = novaPos - boardSize;
+            novaPos = boardSize - excedente;
         }
+        // caso chegue no fim não volta
+        //if (novaPos > boardSize) {
+        //    novaPos = boardSize;
+        //}
 
         // atualiza posição
         playerPos.put(id, novaPos);
 
-        // se chegou ao fim do tabuleiro, não muda de jogador
+        // se não ficou na meta, passa o turno ao próximo jogador
         if (novaPos < boardSize) {
-            // passa o turno ao próximo jogador (ordem circular)
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         }
 
-        // Atualiza contador de turnos
+        // atualiza contador de turnos
         totalTurns++;
 
-        // Regista vencedor se alguém chegou à meta
+        // regista vencedor apenas no 1º que chega exatamente à meta
         if (novaPos == boardSize && winnerId == null) {
             winnerId = id;
         }
