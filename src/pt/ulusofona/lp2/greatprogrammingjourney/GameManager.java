@@ -276,7 +276,7 @@ public class GameManager {
         return out;
     }
 
-    // nao obrigatorio
+    // Nao obrigatorio
     public JPanel getAuthorsPanel(){
         return null;
     }
