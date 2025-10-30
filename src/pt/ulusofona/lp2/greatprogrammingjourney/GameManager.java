@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Comparator;
+
 
 public class GameManager {
 
@@ -72,14 +74,15 @@ public class GameManager {
             tempPlayers.add(new Player(id, nome, linguagens, cor));
         }
 
-        // se chegou aqui, tudo foi validado → grava no estado interno
+        tempPlayers.sort(Comparator.comparingInt(Player::getId));
         players = tempPlayers;
+
         boardSize = worldSize;
-        // TODOS COMEÇAM NA CASA 1
         playerPos.clear();
         for (Player p : players) {
-            playerPos.put(p.getId(), 1);
+            playerPos.put(p.getId(), 1); // posição inicial 1 (1-based)
         }
+        currentPlayerIndex = 0;  // **garante** que começa no menor id
         totalTurns = 1;
         winnerId = null;
         return true;
@@ -222,7 +225,9 @@ public class GameManager {
             return false;
         }
         for (int pos : playerPos.values()) {
-            if (pos == boardSize) return true;
+            if (pos == boardSize) {
+                return true;
+            }
         }
         return false;
     }
