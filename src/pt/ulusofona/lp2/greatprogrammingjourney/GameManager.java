@@ -80,7 +80,7 @@ public class GameManager {
         for (Player p : players) {
             playerPos.put(p.getId(), 1);
         }
-        totalTurns = 0;
+        totalTurns = 1;
         winnerId = null;
         return true;
     }
