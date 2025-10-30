@@ -78,7 +78,7 @@ public class GameManager {
         // TODOS COMEÇAM NA CASA 1
         playerPos.clear();
         for (Player p : players) {
-            playerPos.put(p.getId(), 1);
+            playerPos.put(p.getId(), 0);
         }
         totalTurns = 1;
         winnerId = null;
