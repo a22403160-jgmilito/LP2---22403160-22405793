@@ -78,7 +78,7 @@ public class GameManager {
         // TODOS COMEÇAM NA CASA 1
         playerPos.clear();
         for (Player p : players) {
-            playerPos.put(p.getId(), 0);
+            playerPos.put(p.getId(), 1);
         }
         totalTurns = 1;
         winnerId = null;
@@ -185,40 +185,35 @@ public class GameManager {
             return false;
         }
 
-        // jogador atual
         Player atual = players.get(currentPlayerIndex);
         int id = atual.getId();
 
-        // posição atual e nova posição
-        int posAtual = playerPos.getOrDefault(id, 1);
+        int posAtual = playerPos.getOrDefault(id, 1); // começa na 1
         int novaPos = posAtual + nrSpaces;
 
-        // se passar da meta, volta o excedente
+        // rebote 1-based: reflete em boardSize
         if (novaPos > boardSize) {
             int excedente = novaPos - boardSize;
             novaPos = boardSize - excedente;
+            if (novaPos < 1) { // proteção caso o excedente seja grande
+                int ciclo = boardSize - 1; // comprimento útil entre 1 e boardSize
+                // normaliza múltiplos ricochetes
+                int dist = (excedente - 1) % ciclo;
+                novaPos = boardSize - dist;
+            }
         }
-        // caso chegue no fim não volta
-        //if (novaPos > boardSize) {
-        //    novaPos = boardSize;
-        //}
 
-        // atualiza posição
         playerPos.put(id, novaPos);
 
-        // se não ficou na meta, passa o turno ao próximo jogador
-        if (novaPos < boardSize) {
+        // passa a vez só se não chegou exatamente à meta
+        if (novaPos != boardSize) {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         }
 
-        // atualiza contador de turnos
         totalTurns++;
-
-        // regista vencedor apenas no 1º que chega exatamente à meta
         if (novaPos == boardSize && winnerId == null) {
             winnerId = id;
         }
-
         return true;
     }
 
@@ -226,13 +221,10 @@ public class GameManager {
         if (boardSize <= 0 || playerPos.isEmpty()) {
             return false;
         }
-
         for (int pos : playerPos.values()) {
-            if (pos >= boardSize) {
-                return true; // Pelo menos um jogador chegou à meta
-            }
+            if (pos == boardSize) return true;
         }
-        return false; // Nenhum jogador chegou ainda
+        return false;
     }
 
 
