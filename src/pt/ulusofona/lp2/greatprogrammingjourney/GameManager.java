@@ -6,9 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Comparator;
 
-
 public class GameManager {
-
     public GameManager() {
     }
 
@@ -25,8 +23,6 @@ public class GameManager {
 
     // posição atual de cada jogador: id -> posição
     private final HashMap<Integer, Integer> playerPos = new HashMap<>();
-
-
 
     public boolean createInitialBoard(String[][] playerInfo, int worldSize){
         if (playerInfo == null || playerInfo.length < 2 || playerInfo.length > 4) {
@@ -133,7 +129,7 @@ public class GameManager {
             if (p.getId() == id) {
                 int pos = playerPos.getOrDefault(id, 1);
                 String estado;
-                    estado = "Em Jogo";
+                estado = "Em Jogo";
 
                 return p.getId() + " | "
                         + p.getNome() + " | "
@@ -169,7 +165,6 @@ public class GameManager {
         String todosIds = String.join(",", ids);
         return new String[]{ todosIds };
     }
-
 
     public int getCurrentPlayerID(){
         if (players == null || players.isEmpty()) {
@@ -231,7 +226,6 @@ public class GameManager {
         }
         return false;
     }
-
 
     public ArrayList<String> getGameResults() {
         ArrayList<String> out = new ArrayList<>();
