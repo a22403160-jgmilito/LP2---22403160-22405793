@@ -71,4 +71,5 @@ public class Board {
     public Map<Integer, Integer> getTodasPosicoes() {
         return new HashMap<>(playerPos);
     }
+
 }
