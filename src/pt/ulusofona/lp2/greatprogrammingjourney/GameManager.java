@@ -1,293 +1,320 @@
 package pt.ulusofona.lp2.greatprogrammingjourney;
+
 import javax.swing.*;
+import java.awt.*;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
 
 public class GameManager {
+
+    // Lista de jogadores
+    private final ArrayList<Player> players = new ArrayList<>();
+
+    // Tabuleiro (nova classe)
+    private Board board;
+
+    // Estado do jogo
+    private int totalTurns = 0;
+    private Integer winnerId = null;
+    private int currentPlayerIndex = 0;
+
     public GameManager() {
     }
 
-    ArrayList<Player> players = new ArrayList<>();
+    /* ============================
+       MÉTODOS AUXILIARES INTERNOS
+       ============================ */
 
-    // guarda o tamanho do tabuleiro
-    private int boardSize = 0;
+    private Player getPlayerById(int id) {
+        for (Player p : players) {
+            if (p.getId() == id) {
+                return p;
+            }
+        }
+        return null;
+    }
 
-    private int totalTurns = 0;
+    /* ====================================================
+       1) createInitialBoard (OBRIGATÓRIO / IMUTÁVEL)
+       ==================================================== */
 
-    private Integer winnerId = null;
-
-    private int currentPlayerIndex = 0;
-
-    // posição atual de cada jogador: id -> posição
-    private final HashMap<Integer, Integer> playerPos = new HashMap<>();
-
-    public boolean createInitialBoard(String[][] playerInfo, int worldSize){
-        if (playerInfo == null || playerInfo.length < 2 || playerInfo.length > 4) {
+    // Assinatura exigida pela GUI
+    public boolean createInitialBoard(String[][] playerInfo, int worldSize) {
+        if (playerInfo == null || playerInfo.length == 0) {
             return false;
         }
-        if (worldSize < playerInfo.length * 2) {
+        if (worldSize <= 0) {
             return false;
         }
 
-        Set<String> coresValidas = Set.of("Purple", "Green", "Brown", "Blue");
-        Set<Integer> ids = new HashSet<>();
-        Set<String> cores = new HashSet<>();
+        players.clear();
 
-        ArrayList<Player> tempPlayers = new ArrayList<>();
-
-        for (String[] row : playerInfo) {
-            // agora 4 colunas: id, nome, linguagens, cor
-            if (row == null || row.length < 4) {
-                return false;
+        // Cada linha de playerInfo: [0] id, [1] nome, [2] linguagens, [3] cor
+        for (String[] info : playerInfo) {
+            if (info == null || info.length < 4) {
+                continue;
             }
 
             int id;
             try {
-                id = Integer.parseInt(row[0]);
+                id = Integer.parseInt(info[0]);
             } catch (NumberFormatException e) {
                 return false;
             }
-            if (id <= 0 || !ids.add(id)) {
-                return false;
-            }
 
-            String nome = row[1];
-            if (nome == null || nome.trim().isEmpty()) {
-                return false;
-            }
-            String linguagens = row[2];
-            if (linguagens == null) {
-                linguagens = ""; // pode estar vazio
-            }
-            String cor = row[3];
-            if (cor == null || !coresValidas.contains(cor) || !cores.add(cor)) {
-                return false;
-            }
-            // Se tudo válido, cria o Player temporariamente
-            tempPlayers.add(new Player(id, nome, linguagens, cor));
+            String nome = info[1];
+            String linguagens = info[2];
+            String cor = info[3];
+
+            players.add(new Player(id, nome, linguagens, cor));
         }
 
-        tempPlayers.sort(Comparator.comparingInt(Player::getId));
-        players = tempPlayers;
-
-        boardSize = worldSize;
-        playerPos.clear();
-        for (Player p : players) {
-            playerPos.put(p.getId(), 1); // posição inicial 1 (1-based)
+        if (players.isEmpty()) {
+            return false;
         }
-        currentPlayerIndex = 0;  // **garante** que começa no menor id
+
+        // cria o tabuleiro com todos os jogadores na posição inicial (1)
+        board = new Board(worldSize, players);
+
+        currentPlayerIndex = 0;
         totalTurns = 1;
         winnerId = null;
+
         return true;
     }
 
-    public String getImagePng(int nrSquare){
-        // tabuleiro ainda não inicializado
-        if (boardSize <= 0) {
+    /* ====================================================
+       2) getImagePng (OBRIGATÓRIO / IMUTÁVEL)
+       ==================================================== */
+
+    public String getImagePng(int nrSquare) {
+        if (board == null) {
             return null;
         }
 
-        // fora do intervalo [1, boardSize] → null
-        if (nrSquare < 1 || nrSquare > boardSize) {
+        if (!board.posicaoValida(nrSquare)) {
             return null;
         }
 
-        // última casa (meta)
-        if (nrSquare == boardSize) {
+        // Casa final
+        if (board.posicaoVitoria(nrSquare)) {
             return "glory.png";
         }
-        return null;
 
+        // Neste momento não tens outras imagens associadas a casas
+        return null;
     }
 
-    public String[] getProgrammerInfo(int id){
-        if (players == null || players.isEmpty()) {
+    /* ====================================================
+       3) getProgrammerInfo (OBRIGATÓRIO / IMUTÁVEL)
+       ==================================================== */
+
+    public String[] getProgrammerInfo(int id) {
+        Player p = getPlayerById(id);
+        if (p == null) {
             return null;
         }
-        for (Player p : players) {
-            if (p.getId() == id) {
-                return new String[] {
-                        String.valueOf(p.getId()),
-                        p.getNome(),
-                        p.getLinguagens(),
-                        p.getCor()
-                };
-            }
-        }
-        return null;
+        return p.asArray(); // método que definimos na classe Player
     }
 
-    public String getProgrammerInfoAsStr(int id){
-        if (players == null || players.isEmpty()) {
+    /* ====================================================
+       4) getProgrammerInfoAsStr (OBRIGATÓRIO / IMUTÁVEL)
+       ==================================================== */
+
+    public String getProgrammerInfoAsStr(int id) {
+        if (players.isEmpty() || board == null) {
             return null;
         }
 
-        for (Player p : players) {
-            if (p.getId() == id) {
-                int pos = playerPos.getOrDefault(id, 1);
-                String estado;
-                estado = "Em Jogo";
-
-                return p.getId() + " | "
-                        + p.getNome() + " | "
-                        + pos + " | "
-                        + (p.getLinguagens().isEmpty() ? "Sem linguagens" : p.getLinguagens())
-                        + " | " + estado;
-            }
+        Player p = getPlayerById(id);
+        if (p == null) {
+            return null;
         }
-        return null;
+
+        int pos = board.getPlayerPosicao(id);
+        String estado = board.posicaoVitoria(pos) ? "Vencedor" : "Em Jogo";
+
+        String linguagens = p.getLinguagensNormalizadas();
+        if (linguagens == null || linguagens.isEmpty()) {
+            linguagens = "Sem linguagens";
+        }
+
+        // Formato típico: "id | nome | pos | linguagens | estado"
+        return p.getId() + " | "
+                + p.getNome() + " | "
+                + pos + " | "
+                + linguagens + " | "
+                + estado;
     }
+
+    /* ====================================================
+       5) getSlotInfo (OBRIGATÓRIO / IMUTÁVEL)
+       ==================================================== */
 
     public String[] getSlotInfo(int position) {
-        if (boardSize <= 0 || position < 1 || position > boardSize) {
+        if (board == null || !board.posicaoValida(position)) {
             return null;
         }
-        if (players == null || players.isEmpty()) {
+        if (players.isEmpty()) {
             return null;
         }
 
-        ArrayList<String> ids = new ArrayList<>();
-        for (Player p : players) {
-            int pos = playerPos.getOrDefault(p.getId(), 1);
-            if (pos == position) {
-                ids.add(String.valueOf(p.getId()));
-            }
-        }
-
+        List<Integer> ids = board.getJogadoresNaPosicao(position);
         if (ids.isEmpty()) {
             return null;
         }
 
-        // Junta todos os IDs numa única string separados por vírgula
-        String todosIds = String.join(",", ids);
-        return new String[]{ todosIds };
+        ArrayList<String> idsStr = new ArrayList<>();
+        for (Integer id : ids) {
+            idsStr.add(String.valueOf(id));
+        }
+
+        String todosIds = String.join(",", idsStr);
+        // A GUI espera um array de Strings; pela especificação típica, usa-se 1 elemento com todos os ids
+        return new String[]{todosIds};
     }
 
-    public int getCurrentPlayerID(){
-        if (players == null || players.isEmpty()) {
-            return 0;
-        }
+    /* ====================================================
+       6) getCurrentPlayerID (OBRIGATÓRIO / IMUTÁVEL)
+       ==================================================== */
 
-        if (currentPlayerIndex < 0 || currentPlayerIndex >= players.size()) {
-            currentPlayerIndex = 0;
+    public int getCurrentPlayerID() {
+        if (players.isEmpty()) {
+            return -1;
         }
-        // devolve o ID do jogador atual
         return players.get(currentPlayerIndex).getId();
     }
 
+    /* ====================================================
+       7) moveCurrentPlayer (OBRIGATÓRIO / IMUTÁVEL)
+       ==================================================== */
+
     public boolean moveCurrentPlayer(int nrSpaces) {
-        if (players == null || players.isEmpty() || boardSize <= 0 || nrSpaces <= 0) {
+        if (players.isEmpty() || board == null || nrSpaces <= 0) {
             return false;
         }
 
         Player atual = players.get(currentPlayerIndex);
         int id = atual.getId();
 
-        int posAtual = playerPos.getOrDefault(id, 1); // começa na 1
-        int novaPos = posAtual + nrSpaces;
+        int novaPos = board.movePlayer(id, nrSpaces);
 
-        // rebote 1-based: reflete em boardSize
-        if (novaPos > boardSize) {
-            int excedente = novaPos - boardSize;
-            novaPos = boardSize - excedente;
-            if (novaPos < 1) { // proteção caso o excedente seja grande
-                int ciclo = boardSize - 1; // comprimento útil entre 1 e boardSize
-                // normaliza múltiplos ricochetes
-                int dist = (excedente - 1) % ciclo;
-                novaPos = boardSize - dist;
-            }
-        }
-
-        playerPos.put(id, novaPos);
-
-        // passa a vez só se não chegou exatamente à meta
-        if (novaPos != boardSize) {
+        // Se ainda não chegou ao fim, passa a vez
+        if (!board.posicaoVitoria(novaPos)) {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         }
 
         totalTurns++;
-        if (novaPos == boardSize && winnerId == null) {
+
+        // Regista vencedor (só o primeiro)
+        if (board.posicaoVitoria(novaPos) && winnerId == null) {
             winnerId = id;
         }
+
         return true;
     }
 
+    /* ====================================================
+       8) gameIsOver (OBRIGATÓRIO / IMUTÁVEL)
+       ==================================================== */
+
     public boolean gameIsOver() {
-        if (boardSize <= 0 || playerPos.isEmpty()) {
+        if (board == null) {
             return false;
         }
-        for (int pos : playerPos.values()) {
-            if (pos == boardSize) {
-                return true;
-            }
+        if (winnerId != null) {
+            return true;
         }
-        return false;
+        // Ou qualquer jogador na posição final
+        return board.temJogadorNaPosicaoFinal();
     }
+
+    /* ====================================================
+       9) getGameResults (OBRIGATÓRIO / IMUTÁVEL)
+       ==================================================== */
 
     public ArrayList<String> getGameResults() {
-        ArrayList<String> out = new ArrayList<>();
+        ArrayList<String> resultados = new ArrayList<>();
 
-        // TÍTULO
-        out.add("THE GREAT PROGRAMMING JOURNEY");
-        out.add(""); // linha vazia
+        if (board == null || players.isEmpty()) {
+            return resultados;
+        }
 
-        // NR. DE TURNOS
-        out.add("NR. DE TURNOS");
-        out.add(String.valueOf(totalTurns));
-        out.add(""); // linha vazia
+        ArrayList<Player> ordenado = new ArrayList<>(players);
 
-        // VENCEDOR
-        out.add("VENCEDOR");
-        String vencedorNome = "";
-        if (winnerId != null) {
-            for (Player p : players) {
-                if (p.getId() == winnerId) {
-                    vencedorNome = p.getNome();
-                    break;
+        // Ordena: primeiro quem chegou ao fim; depois pela posição; depois pelo id
+        ordenado.sort(new Comparator<Player>() {
+            @Override
+            public int compare(Player p1, Player p2) {
+                int pos1 = board.getPlayerPosicao(p1.getId());
+                int pos2 = board.getPlayerPosicao(p2.getId());
+
+                boolean p1Goal = board.posicaoVitoria(pos1);
+                boolean p2Goal = board.posicaoVitoria(pos2);
+
+                if (p1Goal && !p2Goal) return -1;
+                if (!p1Goal && p2Goal) return 1;
+
+                // Se nenhum ou ambos chegaram ao fim, ordena por posição descrescente
+                if (pos1 != pos2) {
+                    return Integer.compare(pos2, pos1);
                 }
-            }
-        }
-        out.add(vencedorNome);
-        out.add(""); // linha vazia
 
-        // RESTANTES
-        out.add("RESTANTES");
-
-        ArrayList<Player> restantes = new ArrayList<>();
-        for (Player p : players) {
-            if (winnerId == null || p.getId() != winnerId) {
-                restantes.add(p);
+                // Desempate por id
+                return Integer.compare(p1.getId(), p2.getId());
             }
-        }
-
-        // ordenar por posição desc; em empate, por nome asc
-        restantes.sort((a, b) -> {
-            int posA = playerPos.getOrDefault(a.getId(), 1);
-            int posB = playerPos.getOrDefault(b.getId(), 1);
-            if (posA != posB) {
-                return Integer.compare(posB, posA); // desc
-            }
-            return a.getNome().compareToIgnoreCase(b.getNome());
         });
 
-        for (Player p : restantes) {
-            int pos = playerPos.getOrDefault(p.getId(), 1);
-            out.add(p.getNome() + " " + pos);
+        for (int i = 0; i < ordenado.size(); i++) {
+            Player p = ordenado.get(i);
+            int pos = board.getPlayerPosicao(p.getId());
+            String linha = (i + 1) + "º: " + p.getId() + " | " + p.getNome() + " | " + pos;
+            resultados.add(linha);
         }
 
-        return out;
+        return resultados;
     }
 
-    // Nao obrigatorio
-    public JPanel getAuthorsPanel(){
-        return null;
+    /* ====================================================
+       10) getAuthorsPanel (OBRIGATÓRIO / IMUTÁVEL)
+       ==================================================== */
+
+    public JPanel getAuthorsPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(Color.WHITE);
+
+        JLabel titulo = new JLabel("Great Programming Journey");
+        titulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel autor1 = new JLabel("Autor: (o teu nome aqui)");
+        autor1.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+        panel.add(titulo);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+        panel.add(autor1);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        return panel;
     }
-    public HashMap customizeBoard() {
-        // Podes devolver vazio (a GUI usa defaults)
-        return new HashMap();
-        // Se no futuro quiseres customizar algo, podes colocar pares chave-valor aqui.
+
+    /* ====================================================
+       11) customizeBoard (OBRIGATÓRIO / IMUTÁVEL)
+       ==================================================== */
+
+    public HashMap<String, String> customizeBoard() {
+        HashMap<String, String> config = new HashMap<>();
+
+        // Aqui podes configurar coisas que a GUI possa usar, conforme o enunciado.
+        // Como não temos o enunciado completo, deixo algo simples:
+        // (Se o professor tiver indicado chaves específicas, mete-as aqui.)
+        config.put("title", "Great Programming Journey");
+        // Exemplo: cores, imagens, etc. (se a GUI usar)
+        // config.put("board-color", "#FFFFFF");
+
+        return config;
     }
 }
