@@ -55,12 +55,7 @@ public class Player {
         return String.join("; ", lista);
     }
     public String[] asArray() {
-        return new String[]{
-                String.valueOf(id),
-                nome,
-                getLinguagensNormalizadas(),
-                cor
-        };
+        return new String[]{ String.valueOf(id), nome, getLinguagensNormalizadas(), cor};
     }
     @Override
     public String toString() {

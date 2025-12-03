@@ -2,6 +2,7 @@ package pt.ulusofona.lp2.greatprogrammingjourney;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -9,10 +10,7 @@ import java.util.List;
 
 public class GameManager {
 
-    // Lista de jogadores
     private final ArrayList<Player> players = new ArrayList<>();
-
-    // Tabuleiro (nova classe)
     private Board board;
 
     // Estado do jogo
@@ -23,10 +21,6 @@ public class GameManager {
     public GameManager() {
     }
 
-    /* ============================
-       MÉTODOS AUXILIARES INTERNOS
-       ============================ */
-
     private Player getPlayerById(int id) {
         for (Player p : players) {
             if (p.getId() == id) {
@@ -35,12 +29,6 @@ public class GameManager {
         }
         return null;
     }
-
-    /* ====================================================
-       1) createInitialBoard (OBRIGATÓRIO / IMUTÁVEL)
-       ==================================================== */
-
-    // Assinatura exigida pela GUI
     public boolean createInitialBoard(String[][] playerInfo, int worldSize) {
         if (playerInfo == null || playerInfo.length == 0) {
             return false;
@@ -84,45 +72,26 @@ public class GameManager {
 
         return true;
     }
-
-    /* ====================================================
-       2) getImagePng (OBRIGATÓRIO / IMUTÁVEL)
-       ==================================================== */
-
     public String getImagePng(int nrSquare) {
         if (board == null) {
             return null;
         }
-
         if (!board.posicaoValida(nrSquare)) {
             return null;
         }
-
         // Casa final
         if (board.posicaoVitoria(nrSquare)) {
             return "glory.png";
         }
-
-        // Neste momento não tens outras imagens associadas a casas
         return null;
     }
-
-    /* ====================================================
-       3) getProgrammerInfo (OBRIGATÓRIO / IMUTÁVEL)
-       ==================================================== */
-
     public String[] getProgrammerInfo(int id) {
         Player p = getPlayerById(id);
         if (p == null) {
             return null;
         }
-        return p.asArray(); // método que definimos na classe Player
+        return p.asArray();
     }
-
-    /* ====================================================
-       4) getProgrammerInfoAsStr (OBRIGATÓRIO / IMUTÁVEL)
-       ==================================================== */
-
     public String getProgrammerInfoAsStr(int id) {
         if (players.isEmpty() || board == null) {
             return null;
@@ -148,11 +117,6 @@ public class GameManager {
                 + linguagens + " | "
                 + estado;
     }
-
-    /* ====================================================
-       5) getSlotInfo (OBRIGATÓRIO / IMUTÁVEL)
-       ==================================================== */
-
     public String[] getSlotInfo(int position) {
         if (board == null || !board.posicaoValida(position)) {
             return null;
@@ -160,37 +124,23 @@ public class GameManager {
         if (players.isEmpty()) {
             return null;
         }
-
         List<Integer> ids = board.getJogadoresNaPosicao(position);
         if (ids.isEmpty()) {
             return null;
         }
-
         ArrayList<String> idsStr = new ArrayList<>();
         for (Integer id : ids) {
             idsStr.add(String.valueOf(id));
         }
-
         String todosIds = String.join(",", idsStr);
-        // A GUI espera um array de Strings; pela especificação típica, usa-se 1 elemento com todos os ids
         return new String[]{todosIds};
     }
-
-    /* ====================================================
-       6) getCurrentPlayerID (OBRIGATÓRIO / IMUTÁVEL)
-       ==================================================== */
-
     public int getCurrentPlayerID() {
         if (players.isEmpty()) {
             return -1;
         }
         return players.get(currentPlayerIndex).getId();
     }
-
-    /* ====================================================
-       7) moveCurrentPlayer (OBRIGATÓRIO / IMUTÁVEL)
-       ==================================================== */
-
     public boolean moveCurrentPlayer(int nrSpaces) {
         if (players.isEmpty() || board == null || nrSpaces <= 0) {
             return false;
@@ -215,11 +165,6 @@ public class GameManager {
 
         return true;
     }
-
-    /* ====================================================
-       8) gameIsOver (OBRIGATÓRIO / IMUTÁVEL)
-       ==================================================== */
-
     public boolean gameIsOver() {
         if (board == null) {
             return false;
@@ -230,11 +175,6 @@ public class GameManager {
         // Ou qualquer jogador na posição final
         return board.temJogadorNaPosicaoFinal();
     }
-
-    /* ====================================================
-       9) getGameResults (OBRIGATÓRIO / IMUTÁVEL)
-       ==================================================== */
-
     public ArrayList<String> getGameResults() {
         ArrayList<String> resultados = new ArrayList<>();
 
@@ -276,11 +216,6 @@ public class GameManager {
 
         return resultados;
     }
-
-    /* ====================================================
-       10) getAuthorsPanel (OBRIGATÓRIO / IMUTÁVEL)
-       ==================================================== */
-
     public JPanel getAuthorsPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -300,11 +235,6 @@ public class GameManager {
 
         return panel;
     }
-
-    /* ====================================================
-       11) customizeBoard (OBRIGATÓRIO / IMUTÁVEL)
-       ==================================================== */
-
     public HashMap<String, String> customizeBoard() {
         HashMap<String, String> config = new HashMap<>();
 
@@ -316,5 +246,22 @@ public class GameManager {
         // config.put("board-color", "#FFFFFF");
 
         return config;
+    }
+
+    //part 2
+    public String getProgrammersInfo(){
+        return "";
+    }
+    public String reactToAbyssOrTool(){
+        return "";
+    }
+
+    /*
+    public void loadGame(File file){
+        throws InvalidFileException, FileNotFoundException;
+    }
+    */
+    public boolean saveGame(File file){
+        return false;
     }
 }
