@@ -53,8 +53,9 @@ public class Player {
     }
     @Override
     public String toString() {
-        return id + " | " + nome + " | " + getLinguagensNormalizadas() + " | " + cor;
+        return id + " | " + nome + " | " + posicao + " | " + getFerramentasAsString() + " | " + getLinguagensNormalizadas();
     }
+
     public int getPosicao() {
         return posicao;
     }
@@ -102,4 +103,24 @@ public class Player {
     public void removeFerramenta(Ferramentas f) {
         ferramentas.remove(f);
     }
+    public String getFerramentasAsString() {
+        if (ferramentas == null || ferramentas.isEmpty()) {
+            return "No tools";
+        }
+
+        ArrayList<String> nomes = new ArrayList<>();
+        for (Ferramentas f : ferramentas) {
+            if (f != null && f.getNome() != null) {
+                nomes.add(f.getNome());
+            }
+        }
+
+        if (nomes.isEmpty()) {
+            return "No tools";
+        }
+
+        // Sem espaços, como no enunciado: "IDE;Herança"
+        return String.join(";", nomes);
+    }
+
 }
