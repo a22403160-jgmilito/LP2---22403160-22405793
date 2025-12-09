@@ -23,7 +23,6 @@ public class TestesUnitarios extends Ferramentas {
         // Escolha lógica:
         // Testes Unitários ajudam a encontrar problemas simples,
         // como erros de sintaxe, antes da execução.
-        //
         // Therefore → anula Erro de Sintaxe (ID 0).
         return abismo.getId() == 0;
     }
