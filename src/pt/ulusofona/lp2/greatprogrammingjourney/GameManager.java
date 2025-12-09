@@ -248,27 +248,32 @@ public class GameManager {
         if (worldSize <= 0) {
             return false;
         }
+
         players.clear();
+
         for (String[] info : playerInfo) {
             if (info == null || info.length < 4) {
                 return false; // dado de jogador mal formado
             }
+
             int id;
             try {
                 id = Integer.parseInt(info[0]);
             } catch (NumberFormatException e) {
                 return false;
             }
+
             String nome = info[1];
-            String cor = info[2];
-            String linguagens = info[3];
+            String linguagens = info[2];
+            String cor = info[3];
             players.add(new Player(id, nome, linguagens, cor));
         }
+
         if (players.isEmpty()) {
             return false;
         }
-        // NÃO se pode jogar só com 1 jogador
-        if (players.size() < 2) {
+
+        if (players.size() < 2 || players.size() > 4) {
             players.clear();
             board = null;
             abismosNaPosicao = null;
@@ -278,6 +283,7 @@ public class GameManager {
         board = new Board(worldSize, players);
         abismosNaPosicao = new Abismos[worldSize + 1];
         ferramentasNaPosicao = new Ferramentas[worldSize + 1];
+
         if (abyssesAndTools != null) {
             for (String[] linha : abyssesAndTools) {
                 if (linha == null || linha.length < 3) {
@@ -297,29 +303,27 @@ public class GameManager {
                 if (!board.posicaoValida(pos)) {
                     return false;
                 }
-
                 if (tipoLinha == 0) {
-                    // ---------- ABISMO ----------
+                    // ABISMO
                     if (abismosNaPosicao[pos] != null) {
-                        return false; // já existe algo na casa
+                        return false;
                     }
                     Abismos ab = criarAbismoPorId(tipoId);
                     if (ab == null) {
-                        return false; // id de abismo desconhecido
+                        return false;
                     }
                     abismosNaPosicao[pos] = ab;
                 } else if (tipoLinha == 1) {
-                    // ---------- FERRAMENTA ----------
+                    // FERRAMENTA
                     if (ferramentasNaPosicao[pos] != null) {
                         return false;
                     }
                     Ferramentas f = criarFerramentaPorId(tipoId);
                     if (f == null) {
-                        return false; // id de ferramenta desconhecido
+                        return false;
                     }
                     ferramentasNaPosicao[pos] = f;
                 } else {
-                    // tipo que não é 0 nem 1 → inválido
                     return false;
                 }
             }
@@ -329,6 +333,7 @@ public class GameManager {
         winnerId = null;
         return true;
     }
+
     private Abismos criarAbismoPorId(int id) {
         switch (id) {
             case 0: return new ErroDeSintaxe();
