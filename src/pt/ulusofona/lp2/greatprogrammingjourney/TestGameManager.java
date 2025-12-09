@@ -1,6 +1,6 @@
 package pt.ulusofona.lp2.greatprogrammingjourney;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import static org.junit.Assert.*;
 
 public class TestGameManager {
@@ -17,6 +17,6 @@ public class TestGameManager {
         boolean result = gm.createInitialBoard(players, 10);
 
         assertTrue("O tabuleiro devia ser criado com sucesso", result);
-        assertEquals(1, gm.getCurrentPlayerID());
+        assertEquals("O primeiro jogador devia ser o id 1", 1, gm.getCurrentPlayerID());
     }
 }

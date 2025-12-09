@@ -1,8 +1,8 @@
 package pt.ulusofona.lp2.greatprogrammingjourney;
 
-public class TestesUnitarios extends Ferramentas {
+public class FerramentaTestesUnitarios extends Ferramentas {
 
-    public TestesUnitarios() {
+    public FerramentaTestesUnitarios() {
         super(2);
     }
 

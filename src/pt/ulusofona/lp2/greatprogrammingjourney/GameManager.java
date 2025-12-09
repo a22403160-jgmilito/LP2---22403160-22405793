@@ -361,7 +361,7 @@ public class GameManager {
         switch (id) {
             case 0: return new Heranca();
             case 1: return new ProgramacaoFuncional();
-            case 2: return new TestesUnitarios();
+            case 2: return new FerramentaTestesUnitarios();
             case 3: return new TratamentoDeExcepcoes();
             case 4: return new IDE();
             case 5: return new AjudaDoProfessor();
