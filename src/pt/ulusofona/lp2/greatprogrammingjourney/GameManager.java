@@ -219,9 +219,34 @@ public class GameManager {
 
         return config;
     }
-    public String getProgrammerInfo(int id) {
-        return getProgrammerInfoAsStr(id);
+    public String[] getProgrammerInfo(int id) {
+        if (players.isEmpty() || board == null) {
+            return null;
+        }
+
+        Player p = getPlayerById(id);
+        if (p == null) {
+            return null;
+        }
+
+        int pos = board.getPlayerPosicao(id);
+        String estado = board.posicaoVitoria(pos) ? "Vencedor" : "Em Jogo";
+
+        String linguagens = p.getLinguagensNormalizadas();
+        if (linguagens == null || linguagens.isEmpty()) {
+            linguagens = "Sem linguagens";
+        }
+
+        // Array esperado pelos testes: [id, nome, pos, linguagens, estado]
+        return new String[]{
+                String.valueOf(p.getId()),
+                p.getNome(),
+                String.valueOf(pos),
+                linguagens,
+                estado
+        };
     }
+
 
 
     //part 2
