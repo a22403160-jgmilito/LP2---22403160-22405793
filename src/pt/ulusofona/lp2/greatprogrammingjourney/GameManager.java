@@ -36,51 +36,7 @@ public class GameManager {
         return null;
     }
     public boolean createInitialBoard(String[][] playerInfo, int worldSize) {
-        if (playerInfo == null || playerInfo.length == 0) {
-            return false;
-        }
-        if (worldSize <= 0) {
-            return false;
-        }
-
-        players.clear();
-
-        // Cada linha de playerInfo: [0] id, [1] nome, [2] linguagens, [3] cor
-        for (String[] info : playerInfo) {
-            if (info == null || info.length < 4) {
-                continue;
-            }
-
-            int id;
-            try {
-                id = Integer.parseInt(info[0]);
-            } catch (NumberFormatException e) {
-                return false;
-            }
-
-            String nome = info[1];
-            String linguagens = info[2];
-            String cor = info[3];
-
-            players.add(new Player(id, nome, linguagens, cor));
-        }
-
-        if (players.isEmpty()) {
-            return false;
-        }
-
-        // cria o tabuleiro com todos os jogadores na posição inicial (1)
-        board = new Board(worldSize, players);
-
-        // inicializar estruturas de abismos e ferramentas
-        abismosNaPosicao = new Abismos[worldSize + 1];       // posições 1..worldSize
-        ferramentasNaPosicao = new Ferramentas[worldSize + 1];
-
-        currentPlayerIndex = 0;
-        totalTurns = 1;
-        winnerId = null;
-
-        return true;
+        return createInitialBoard(playerInfo, worldSize, null);
     }
     public String getImagePng(int nrSquare) {
         if (board == null) {
@@ -208,14 +164,16 @@ public class GameManager {
                 boolean p1Goal = board.posicaoVitoria(pos1);
                 boolean p2Goal = board.posicaoVitoria(pos2);
 
-                if (p1Goal && !p2Goal) return -1;
-                if (!p1Goal && p2Goal) return 1;
-
+                if (p1Goal && !p2Goal) {
+                    return -1;
+                }
+                if (!p1Goal && p2Goal) {
+                    return 1;
+                }
                 // Se nenhum ou ambos chegaram ao fim, ordena por posição descrescente
                 if (pos1 != pos2) {
                     return Integer.compare(pos2, pos1);
                 }
-
                 // Desempate por id
                 return Integer.compare(p1.getId(), p2.getId());
             }
@@ -261,8 +219,156 @@ public class GameManager {
 
         return config;
     }
+    public String getProgrammerInfo(int id) {
+        return getProgrammerInfoAsStr(id);
+    }
+
 
     //part 2
+    public boolean createInitialBoard(String[][] playerInfo, int worldSize, String[][] abyssesAndTools) {
+        // ---------- 1) VALIDAÇÃO BÁSICA ----------
+        if (playerInfo == null || playerInfo.length == 0) {
+            return false;
+        }
+        if (worldSize <= 0) {
+            return false;
+        }
+
+        players.clear();
+
+        // ---------- 2) CRIAR JOGADORES ----------
+        // Cada linha de playerInfo: [0] id, [1] nome, [2] linguagens, [3] cor
+        for (String[] info : playerInfo) {
+            if (info == null || info.length < 4) {
+                return false; // dado de jogador mal formado
+            }
+
+            int id;
+            try {
+                id = Integer.parseInt(info[0]);
+            } catch (NumberFormatException e) {
+                return false;
+            }
+
+            String nome = info[1];
+            String linguagens = info[2];
+            String cor = info[3];
+
+            // Podes, se quiseres, validar duplicados de id aqui
+            players.add(new Player(id, nome, linguagens, cor));
+        }
+
+        if (players.isEmpty()) {
+            return false;
+        }
+
+        // ---------- 3) CRIAR TABULEIRO ----------
+        board = new Board(worldSize, players);
+
+        // ---------- 4) INICIALIZAR ARRAYS DE ABISMOS/FERRAMENTAS ----------
+        abismosNaPosicao = new Abismos[worldSize + 1];       // posições 1..worldSize
+        ferramentasNaPosicao = new Ferramentas[worldSize + 1];
+
+        // ---------- 5) LER ABISMOS E FERRAMENTAS (se houver) ----------
+        // FORMATO SUPOSO DE CADA LINHA:
+        // [0] tipo (0 = abismo, 1 = ferramenta)
+        // [1] id do tipo de abismo/ferramenta
+        // [2] posição no tabuleiro
+        //
+        // Se o teu enunciado usar outro formato, é só ajustar aqui.
+
+        if (abyssesAndTools != null) {
+            for (String[] linha : abyssesAndTools) {
+                if (linha == null || linha.length < 3) {
+                    return false;
+                }
+
+                int tipoLinha;    // 0 = abismo, 1 = ferramenta
+                int tipoId;       // id do abismo/ferramenta
+                int pos;          // posição no tabuleiro
+
+                try {
+                    tipoLinha = Integer.parseInt(linha[0]);
+                    tipoId = Integer.parseInt(linha[1]);
+                    pos = Integer.parseInt(linha[2]);
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+
+                // posição tem de ser válida
+                if (!board.posicaoValida(pos)) {
+                    return false;
+                }
+
+                if (tipoLinha == 0) {
+                    // ---------- ABISMO ----------
+                    if (abismosNaPosicao[pos] != null) {
+                        // duas coisas na mesma casa → inválido
+                        return false;
+                    }
+
+                    Abismos ab = criarAbismoPorId(tipoId);
+                    if (ab == null) {
+                        return false; // id de abismo desconhecido
+                    }
+
+                    abismosNaPosicao[pos] = ab;
+
+                } else if (tipoLinha == 1) {
+                    // ---------- FERRAMENTA ----------
+                    if (ferramentasNaPosicao[pos] != null) {
+                        return false;
+                    }
+
+                    Ferramentas f = criarFerramentaPorId(tipoId);
+                    if (f == null) {
+                        return false; // id de ferramenta desconhecido
+                    }
+
+                    ferramentasNaPosicao[pos] = f;
+
+                } else {
+                    // tipo que não é 0 nem 1 → inválido
+                    return false;
+                }
+            }
+        }
+        // ---------- 6) ESTADO INICIAL DO JOGO ----------
+        currentPlayerIndex = 0;
+        totalTurns = 1;
+        winnerId = null;
+
+        return true;
+    }
+
+    private Abismos criarAbismoPorId(int id) {
+        switch (id) {
+            case 0: return new ErroDeSintaxe();
+            case 1: return new ErroDeLogica();
+            case 2: return new ExceptionAbismo();
+            case 3: return new FileNotFoundException();
+            case 4: return new Crash();
+            case 5: return new CodigoDuplicado();
+            case 6: return new EfeitosSecundarios();
+            case 7: return new BlueScreenOfDeath();
+            case 8: return new CicloInfinito();
+            case 9: return new SegmentationFault();
+            default:
+                return null;
+        }
+    }
+    private Ferramentas criarFerramentaPorId(int id) {
+        switch (id) {
+            case 0: return new Heranca();
+            case 1: return new ProgramacaoFuncional();
+            case 2: return new TestesUnitarios();
+            case 3: return new TratamentoDeExcepcoes();
+            case 4: return new IDE();
+            case 5: return new AjudaDoProfessor();
+            default:
+                return null;
+        }
+    }
     public String reactToAbyssOrTool() {
         if (board == null || players.isEmpty()) {
             return null;
@@ -306,7 +412,7 @@ public class GameManager {
 
             if (anuladora != null) {
                 // Consome a ferramenta e anula o efeito
-                atual.RemoveFerramenta(anuladora);
+                atual.removeFerramenta(anuladora);
 
                 if (mensagem.length() > 0) {
                     mensagem.append(" ");
@@ -350,7 +456,6 @@ public class GameManager {
 
         return mensagem.toString();
     }
-
     public boolean saveGame(File file) {
         if (board == null || players.isEmpty() || file == null) {
             return false;

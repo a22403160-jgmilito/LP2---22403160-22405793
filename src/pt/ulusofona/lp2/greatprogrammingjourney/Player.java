@@ -99,7 +99,7 @@ public class Player {
         }
         return null;
     }
-    public void RemoveFerramenta(Ferramentas f) {
+    public void removeFerramenta(Ferramentas f) {
         ferramentas.remove(f);
     }
 }

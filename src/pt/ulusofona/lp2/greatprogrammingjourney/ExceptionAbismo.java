@@ -1,8 +1,8 @@
 package pt.ulusofona.lp2.greatprogrammingjourney;
 
-public class Exception extends Abismos {
+public class ExceptionAbismo extends Abismos {
 
-    public Exception() {
+    public ExceptionAbismo() {
         super(2);
     }
 
