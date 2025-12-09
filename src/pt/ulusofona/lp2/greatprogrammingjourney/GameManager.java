@@ -2,11 +2,12 @@ package pt.ulusofona.lp2.greatprogrammingjourney;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+
 
 public class GameManager {
 
@@ -17,6 +18,11 @@ public class GameManager {
     private int totalTurns = 0;
     private Integer winnerId = null;
     private int currentPlayerIndex = 0;
+
+    // parte 2
+    private Abismos[] abismosNaPosicao;        // índice = posição no tabuleiro
+    private Ferramentas[] ferramentasNaPosicao;
+    private int valorDadoLancado = 0;
 
     public GameManager() {
     }
@@ -66,6 +72,10 @@ public class GameManager {
         // cria o tabuleiro com todos os jogadores na posição inicial (1)
         board = new Board(worldSize, players);
 
+        // inicializar estruturas de abismos e ferramentas
+        abismosNaPosicao = new Abismos[worldSize + 1];       // posições 1..worldSize
+        ferramentasNaPosicao = new Ferramentas[worldSize + 1];
+
         currentPlayerIndex = 0;
         totalTurns = 1;
         winnerId = null;
@@ -85,13 +95,28 @@ public class GameManager {
         }
         return null;
     }
-    public String[] getProgrammerInfo(int id) {
-        Player p = getPlayerById(id);
-        if (p == null) {
-            return null;
+    public String getProgrammersInfo() {
+        if (board == null || players.isEmpty()) {
+            return "";
         }
-        return p.asArray();
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < players.size(); i++) {
+            Player p = players.get(i);
+            String info = getProgrammerInfoAsStr(p.getId());
+            if (info != null) {
+                sb.append(info);
+                if (i < players.size() - 1) {
+                    sb.append("\n");
+                }
+            }
+        }
+
+        return sb.toString();
     }
+
+    //alterar essa funcao para chamar o to string do player e nao repetir cogigo
     public String getProgrammerInfoAsStr(int id) {
         if (players.isEmpty() || board == null) {
             return null;
@@ -149,20 +174,9 @@ public class GameManager {
         Player atual = players.get(currentPlayerIndex);
         int id = atual.getId();
 
-        int novaPos = board.movePlayer(id, nrSpaces);
-
-        // Se ainda não chegou ao fim, passa a vez
-        if (!board.posicaoVitoria(novaPos)) {
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-        }
-
-        totalTurns++;
-
-        // Regista vencedor (só o primeiro)
-        if (board.posicaoVitoria(novaPos) && winnerId == null) {
-            winnerId = id;
-        }
-
+        // guardar o valor do dado para usar nos abismos (Erro de Lógica, etc.)
+        valorDadoLancado = nrSpaces;
+        board.movePlayer(id, nrSpaces);
         return true;
     }
     public boolean gameIsOver() {
@@ -249,19 +263,262 @@ public class GameManager {
     }
 
     //part 2
-    public String getProgrammersInfo(){
-        return "";
-    }
-    public String reactToAbyssOrTool(){
-        return "";
+    public String reactToAbyssOrTool() {
+        if (board == null || players.isEmpty()) {
+            return null;
+        }
+
+        Player atual = players.get(currentPlayerIndex);
+        int idJogador = atual.getId();
+        int pos = board.getPlayerPosicao(idJogador);
+
+        StringBuilder mensagem = new StringBuilder();
+
+        // 1) Verificar se há FERRAMENTA na casa
+        Ferramentas ferramenta = null;
+        if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
+            ferramenta = ferramentasNaPosicao[pos];
+        }
+
+        if (ferramenta != null) {
+            // jogador apanha a ferramenta
+            atual.adicionarFerramenta(ferramenta);
+            // remover a ferramenta do tabuleiro
+            ferramentasNaPosicao[pos] = null;
+
+            mensagem.append("O programador ")
+                    .append(atual.getNome())
+                    .append(" apanhou a ferramenta ")
+                    .append(ferramenta.getNome())
+                    .append(".");
+        }
+
+        // 2) Verificar se há ABISMO na casa
+        Abismos abismo = null;
+        if (abismosNaPosicao != null
+                && pos >= 1 && pos < abismosNaPosicao.length) {
+            abismo = abismosNaPosicao[pos];
+        }
+
+        if (abismo != null) {
+            // ver se o jogador tem ferramenta que anula este abismo
+            Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
+
+            if (anuladora != null) {
+                // Consome a ferramenta e anula o efeito
+                atual.RemoveFerramenta(anuladora);
+
+                if (mensagem.length() > 0) {
+                    mensagem.append(" ");
+                }
+
+                mensagem.append("O programador ")
+                        .append(atual.getNome())
+                        .append(" usou a ferramenta ")
+                        .append(anuladora.getNome())
+                        .append(" para anular o abismo ")
+                        .append(abismo.getNome())
+                        .append(".");
+                // Não chamamos aplicarEfeito
+            } else {
+                // Não tem ferramenta aplicável → sofre o efeito do abismo
+                String msgAbismo = abismo.aplicarEfeito(atual, board, valorDadoLancado);
+
+                if (msgAbismo != null && !msgAbismo.isEmpty()) {
+                    if (mensagem.length() > 0) {
+                        mensagem.append(" ");
+                    }
+                    mensagem.append(msgAbismo);
+                }
+            }
+        }
+
+        // 3) Atualizar vitória (depois do efeito do abismo)
+        int novaPos = board.getPlayerPosicao(idJogador);
+        if (board.posicaoVitoria(novaPos) && winnerId == null) {
+            winnerId = idJogador;
+        }
+
+        // 4) Avançar o turno para o próximo jogador e contar turno
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        totalTurns++;
+
+        // 5) Se não aconteceu nada na casa (sem ferramenta e sem abismo), devolve null
+        if (mensagem.length() == 0) {
+            return null;
+        }
+
+        return mensagem.toString();
     }
 
-    /*
-    public void loadGame(File file){
-        throws InvalidFileException, FileNotFoundException;
+    public boolean saveGame(File file) {
+        if (board == null || players.isEmpty() || file == null) {
+            return false;
+        }
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+
+            // 1) Linha WORLD
+            int worldSize = board.getSize();
+            int winner = (winnerId == null) ? -1 : winnerId;
+
+            bw.write("WORLD;" + worldSize + ";" + totalTurns + ";" + currentPlayerIndex + ";" + winner);
+            bw.newLine();
+
+            // 2) Número de jogadores
+            bw.write("PLAYERS;" + players.size());
+            bw.newLine();
+
+            // 3) Cada jogador numa linha PLAYER
+            for (Player p : players) {
+                int pos = board.getPlayerPosicao(p.getId());
+
+                String nome = p.getNome();
+                String linguagens = p.getLinguagensNormalizadas();
+                String cor = p.getCor();
+
+                bw.write("PLAYER;" + p.getId() + ";" + nome + ";" + linguagens + ";" + cor + ";" + pos);
+                bw.newLine();
+            }
+            return true;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
-    */
-    public boolean saveGame(File file){
-        return false;
+    public void loadGame(File file) throws InvalidFileException, java.io.FileNotFoundException {
+        if (file == null || !file.exists()) {
+            throw new java.io.FileNotFoundException("Ficheiro não encontrado: " + file);
+        }
+        // Variáveis temporárias
+        int worldSize;
+        int loadedTotalTurns;
+        int loadedCurrentPlayerIndex;
+        Integer loadedWinnerId;
+
+        ArrayList<Player> loadedPlayers = new ArrayList<>();
+        ArrayList<Integer> loadedPositions = new ArrayList<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+
+            String line = br.readLine();
+            if (line == null) {
+                throw new InvalidFileException("Ficheiro vazio.");
+            }
+
+            // 1) WORLD;...
+            String[] partes = line.split(";");
+            if (partes.length != 5 || !partes[0].equals("WORLD")) {
+                throw new InvalidFileException("Cabeçalho WORLD inválido.");
+            }
+
+            try {
+                worldSize = Integer.parseInt(partes[1]);
+                loadedTotalTurns = Integer.parseInt(partes[2]);
+                loadedCurrentPlayerIndex = Integer.parseInt(partes[3]);
+                int wId = Integer.parseInt(partes[4]);
+                loadedWinnerId = (wId < 0) ? null : wId;
+            } catch (NumberFormatException e) {
+                throw new InvalidFileException("Valores numéricos inválidos no cabeçalho WORLD.");
+            }
+
+            if (worldSize <= 0) {
+                throw new InvalidFileException("Tamanho do tabuleiro inválido: " + worldSize);
+            }
+
+            // 2) PLAYERS;N
+            line = br.readLine();
+            if (line == null) {
+                throw new InvalidFileException("Linha PLAYERS em falta.");
+            }
+
+            partes = line.split(";");
+            if (partes.length != 2 || !partes[0].equals("PLAYERS")) {
+                throw new InvalidFileException("Linha PLAYERS inválida.");
+            }
+
+            int nPlayers;
+            try {
+                nPlayers = Integer.parseInt(partes[1]);
+            } catch (NumberFormatException e) {
+                throw new InvalidFileException("Número de jogadores inválido.");
+            }
+
+            if (nPlayers <= 0) {
+                throw new InvalidFileException("Número de jogadores tem de ser > 0.");
+            }
+
+            // 3) N linhas PLAYER;...
+            for (int i = 0; i < nPlayers; i++) {
+                line = br.readLine();
+                if (line == null) {
+                    throw new InvalidFileException("Linha PLAYER em falta (esperava " + nPlayers + ").");
+                }
+
+                partes = line.split(";");
+                if (partes.length != 6 || !partes[0].equals("PLAYER")) {
+                    throw new InvalidFileException("Linha PLAYER inválida: " + line);
+                }
+
+                try {
+                    int id = Integer.parseInt(partes[1]);
+                    String nome = partes[2];
+                    String linguagens = partes[3];
+                    String cor = partes[4];
+                    int pos = Integer.parseInt(partes[5]);
+
+                    if (pos < 1 || pos > worldSize) {
+                        throw new InvalidFileException("Posição inválida para o jogador " + id + ": " + pos);
+                    }
+
+                    Player p = new Player(id, nome, linguagens, cor);
+                    loadedPlayers.add(p);
+                    loadedPositions.add(pos);
+
+                } catch (NumberFormatException e) {
+                    throw new InvalidFileException("Valores numéricos inválidos na linha PLAYER: " + line);
+                }
+            }
+
+            // Validação extra: currentPlayerIndex
+            if (loadedCurrentPlayerIndex < 0 || loadedCurrentPlayerIndex >= loadedPlayers.size()) {
+                throw new InvalidFileException("Índice de jogador atual inválido: " + loadedCurrentPlayerIndex);
+            }
+
+            // --- Se chegou aqui, os dados são válidos → aplicar ao jogo ---
+
+            players.clear();
+            players.addAll(loadedPlayers);
+
+            // Cria novo tabuleiro (isto põe todos na posição 1)
+            board = new Board(worldSize, players);
+
+            // Limpa abismos e ferramentas (por agora não estamos a restaurar isso)
+            abismosNaPosicao = new Abismos[worldSize + 1];
+            ferramentasNaPosicao = new Ferramentas[worldSize + 1];
+
+            // Coloca cada jogador na posição correta
+            for (int i = 0; i < players.size(); i++) {
+                Player p = players.get(i);
+                int pos = loadedPositions.get(i);
+
+                // todos estão em 1; queremos ir até 'pos' usando a lógica normal do jogo
+                int delta = pos - 1;  // a partir da casa 1
+
+                if (delta > 0) {
+                    board.movePlayer(p.getId(), delta);
+                }
+            }
+
+            // Restaura estado do jogo
+            totalTurns = loadedTotalTurns;
+            currentPlayerIndex = loadedCurrentPlayerIndex;
+            winnerId = loadedWinnerId;
+
+        } catch (IOException e) {
+            throw new InvalidFileException("Erro ao ler o ficheiro: " + e.getMessage());
+        }
     }
 }
+

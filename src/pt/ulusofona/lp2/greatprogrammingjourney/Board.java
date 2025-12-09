@@ -8,17 +8,18 @@ import java.util.Map;
 public class Board {
 
     private final int size;  // tamanho do tabuleiro
-    private final Map<Integer, Integer> playerPos = new HashMap<>();
+    private final List<Player> players;
 
     public Board(int size, List<Player> players) {
         if (size <= 0) {
             throw new IllegalArgumentException("Board size must be > 0");
         }
         this.size = size;
+        this.players = players;
 
-        // todos os jogadores começam na casa 1 (1-based)
+        // garantir que todos começam na casa 1 e isso entra no histórico
         for (Player p : players) {
-            playerPos.put(p.getId(), 1);
+            p.setPosicao(1, size);
         }
     }
 
@@ -32,23 +33,41 @@ public class Board {
         return position == size;
     }
     public int getPlayerPosicao(int playerId) {
-        return playerPos.getOrDefault(playerId, 1);
+        for (Player p : players) {
+            if (p.getId() == playerId) {
+                return p.getPosicao();
+            }
+        }
+        // por default, se não encontrar, considera na posição 1
+        return 1;
     }
     public List<Integer> getJogadoresNaPosicao(int position) {
         List<Integer> ids = new ArrayList<>();
         if (!posicaoValida(position)) {
             return ids;
         }
-        for (Map.Entry<Integer, Integer> entry : playerPos.entrySet()) {
-            if (entry.getValue() == position) {
-                ids.add(entry.getKey());
+        for (Player p : players) {
+            if (p.getPosicao() == position) {
+                ids.add(p.getId());
             }
         }
         return ids;
     }
     public int movePlayer(int playerId, int nrSpaces) {
-        int pos = getPlayerPosicao(playerId);
-
+        if (nrSpaces <= 0) {
+            return getPlayerPosicao(playerId);
+        }
+        Player alvo = null;
+        for (Player p : players) {
+            if (p.getId() == playerId) {
+                alvo = p;
+                break;
+            }
+        }
+        if (alvo == null) {
+            return -1;
+        }
+        int pos = alvo.getPosicao();
         while (nrSpaces > 0) {
             pos++;
             if (pos > size) {
@@ -56,21 +75,23 @@ public class Board {
             }
             nrSpaces--;
         }
-
-        playerPos.put(playerId, pos);
-        return pos;
+        // usa SEMPRE o setPosicao do Player
+        alvo.setPosicao(pos, size);
+        return alvo.getPosicao();
     }
     public boolean temJogadorNaPosicaoFinal() {
-        for (int pos : playerPos.values()) {
-            if (pos == size) {
+        for (Player p : players) {
+            if (p.getPosicao() == size) {
                 return true;
             }
         }
         return false;
     }
     public Map<Integer, Integer> getTodasPosicoes() {
-        return new HashMap<>(playerPos);
+        Map<Integer, Integer> mapa = new HashMap<>();
+        for (Player p : players) {
+            mapa.put(p.getId(), p.getPosicao());
+        }
+        return mapa;
     }
-
-
 }
