@@ -16,9 +16,7 @@ public class CicloInfinito extends Abismos {
 
         int posAtual = jogador.getPosicao();
 
-        // Não altera a posição: o jogador fica preso na casa atual.
-        // A mudança de estado para "Preso" e a lógica de ser libertado
-        // quando outro jogador cair aqui serão tratadas no GameManager.
+        jogador.setEnabled(false);
 
         return "O programador " + jogador.getNome()
                 + " entrou num Ciclo Infinito na casa " + posAtual

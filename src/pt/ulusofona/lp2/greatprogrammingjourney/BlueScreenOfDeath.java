@@ -13,9 +13,8 @@ public class BlueScreenOfDeath extends Abismos {
 
     @Override
     public String aplicarEfeito(Player jogador, Board board, int valorDado) {
-        // Aqui não alteramos posição; o efeito real é derrota.
-        // A remoção do jogador / mudança de estado para "Derrotado"
-        // deve ser tratada pelo GameManager quando processar este abismo.
+
+        jogador.setAlive(false);
 
         return "O programador " + jogador.getNome()
                 + " sofreu um Blue Screen of Death e foi derrotado, ficando fora do jogo.";
