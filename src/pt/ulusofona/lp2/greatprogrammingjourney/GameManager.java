@@ -127,18 +127,80 @@ public class GameManager {
         return players.get(currentPlayerIndex).getId();
     }
     public boolean moveCurrentPlayer(int nrSpaces) {
-        if (players.isEmpty() || board == null || nrSpaces <= 0) {
+        if (players.isEmpty() || board == null) {
+            return false;
+        }
+
+        // 1) Validar intervalo do dado
+        if (nrSpaces < 1 || nrSpaces > 6) {
             return false;
         }
 
         Player atual = players.get(currentPlayerIndex);
-        int id = atual.getId();
 
-        // guardar o valor do dado para usar nos abismos (Erro de Lógica, etc.)
+        // 2) Validar estado do jogador
+        if (!atual.isAlive() || !atual.isEnabled()) {
+            return false;
+        }
+
+        // 3) Regra por linguagem inicial
+        String primeiraLing = getPrimeiraLinguagem(atual);
+
+        if ("Assembly".equalsIgnoreCase(primeiraLing)) {
+            if (nrSpaces > 2) {
+                return false;
+            }
+        } else if ("C".equalsIgnoreCase(primeiraLing)) {
+            if (nrSpaces > 3) {
+                return false;
+            }
+        }
+
+        // Guardar o valor do dado (usado por Erro de Lógica)
         valorDadoLancado = nrSpaces;
-        board.movePlayer(id, nrSpaces);
+
+        // 4) Calcular destino com recuo do excesso
+        int posAtual = board.getPlayerPosicao(atual.getId());
+        int fim = board.getSize();
+
+        int destino = posAtual + nrSpaces;
+
+        if (destino > fim) {
+            int excesso = destino - fim;
+            destino = fim - excesso;
+            if (destino < 1) {
+                destino = 1;
+            }
+        }
+
+        // 5) Executar movimento
+        int delta = destino - posAtual;
+        board.movePlayer(atual.getId(), delta);
+
         return true;
     }
+
+    private String getPrimeiraLinguagem(Player p) {
+        if (p == null) {
+            return "";
+        }
+
+        String linguagens = p.getLinguagensNormalizadas();
+
+        if (linguagens == null) {
+            return "";
+        }
+
+        linguagens = linguagens.trim();
+        if (linguagens.isEmpty()) {
+            return "";
+        }
+
+        String[] partes = linguagens.split(";");
+        return partes[0].trim();
+    }
+
+
     public boolean gameIsOver() {
         if (board == null) {
             return false;
