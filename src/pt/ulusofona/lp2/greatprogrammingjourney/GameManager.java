@@ -241,7 +241,6 @@ public class GameManager {
             linguagens = "";
         }
 
-        // Cor em MAIÚSCULAS
         String cor = p.getCor() == null ? "" : p.getCor();
 
 
