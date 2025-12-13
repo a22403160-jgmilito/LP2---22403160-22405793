@@ -13,7 +13,7 @@ public class ErroDeLogica extends Abismos {
 
     @Override
     public String aplicarEfeito(Player jogador, Board board, int valorDado) {
-        int recuo = valorDado / 2;
+        int recuo = (valorDado + 1) / 2;
 
         if (recuo <= 0) {
             return "O programador " + jogador.getNome()

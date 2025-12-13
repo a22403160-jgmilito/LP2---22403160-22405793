@@ -122,8 +122,12 @@ public class Board {
             return;
         }
 
-        if (pos < 1) pos = 1;
-        if (pos > size) pos = size;
+        if (pos < 1){
+            pos = 1;
+        }
+        if (pos > size){
+            pos = size;
+        }
 
         alvo.setPosicao(pos, size);
     }

@@ -103,18 +103,14 @@ public class GameManager {
             res[0] = String.join(",", idsStr);
         }
 
-        // [1] e [2] Abismo
-        if (abismosNaPosicao != null && abismosNaPosicao[position] != null) {
-            Abismos ab = abismosNaPosicao[position];
-            res[1] = ab.getNome();           // descrição correta
-            res[2] = "A:" + ab.getId();      // tipo
-
-        }
-        // [1] e [2] Ferramenta
-        else if (ferramentasNaPosicao != null && ferramentasNaPosicao[position] != null) {
+        if (ferramentasNaPosicao != null && ferramentasNaPosicao[position] != null) {
             Ferramentas f = ferramentasNaPosicao[position];
             res[1] = f.getNome();
             res[2] = "T:" + f.getId();
+        } else if (abismosNaPosicao != null && abismosNaPosicao[position] != null) {
+            Abismos ab = abismosNaPosicao[position];
+            res[1] = ab.getNome();
+            res[2] = "A:" + ab.getId();
         }
 
         return res;
