@@ -240,23 +240,33 @@ public class GameManager {
         }
 
         int pos = board.getPlayerPosicao(id);
-        String estado = p.getEstadoComoTexto();
 
+        // Linguagens na ORDEM ORIGINAL (não usar normalizadas aqui)
         String linguagens = p.getLinguagensNormalizadas();
-        if (linguagens == null || linguagens.isEmpty()) {
-            linguagens = "Sem linguagens";
+        if (linguagens == null) {
+            linguagens = "";
         }
 
-        // Array esperado pelos testes: [id, nome, pos, linguagens, estado]
+        // Cor em MAIÚSCULAS
+        String cor = p.getCor() == null ? "" : p.getCor().toUpperCase();
+
+        // Ferramentas ORDENADAS
+        String ferramentas = p.getFerramentasAsString();
+
+        String estado = p.getEstadoComoTexto();
+
         return new String[]{
-                String.valueOf(p.getId()),
-                p.getNome(),
-                String.valueOf(pos),
-                p.getCor(),
-                linguagens,
-                estado
+                String.valueOf(p.getId()),   // [0] ID
+                p.getNome(),                 // [1] Nome
+                linguagens,                  // [2] Linguagens
+                cor,                         // [3] Cor
+                String.valueOf(pos),         // [4] Posição
+                ferramentas,                 // [5] Ferramentas
+                estado                       // [6] Estado
         };
     }
+
+
 
 
 
