@@ -404,16 +404,19 @@ public class GameManager {
 
         StringBuilder mensagem = new StringBuilder();
 
-        // 1) Verificar se há FERRAMENTA na casa
+        // --- 1) FERRAMENTA ---
         Ferramentas ferramenta = null;
         if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
             ferramenta = ferramentasNaPosicao[pos];
         }
 
         if (ferramenta != null) {
-            // jogador apanha a ferramenta
-            atual.adicionarFerramenta(ferramenta);
-            // remover a ferramenta do tabuleiro
+            // só apanha se ainda não tiver essa ferramenta
+            if (!atual.temFerramentaComId(ferramenta.getId())) {
+                atual.adicionarFerramenta(ferramenta);
+            }
+
+            // remove sempre do tabuleiro
             ferramentasNaPosicao[pos] = null;
 
             mensagem.append("O programador ")
@@ -423,20 +426,21 @@ public class GameManager {
                     .append(".");
         }
 
-        // 2) Verificar se há ABISMO na casa
+        // --- 2) ABISMO ---
         Abismos abismo = null;
-        if (abismosNaPosicao != null
-                && pos >= 1 && pos < abismosNaPosicao.length) {
+        if (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length) {
             abismo = abismosNaPosicao[pos];
         }
 
         if (abismo != null) {
-            // ver se o jogador tem ferramenta que anula este abismo
             Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
 
             if (anuladora != null) {
-                // Consome a ferramenta e anula o efeito
+                // consome a ferramenta
                 atual.removeFerramenta(anuladora);
+
+                // remove o abismo da casa (fica "resolvido")
+                abismosNaPosicao[pos] = null;
 
                 if (mensagem.length() > 0) {
                     mensagem.append(" ");
@@ -449,10 +453,14 @@ public class GameManager {
                         .append(" para anular o abismo ")
                         .append(abismo.getNome())
                         .append(".");
-                // Não chamamos aplicarEfeito
+
             } else {
-                // Não tem ferramenta aplicável → sofre o efeito do abismo
+                // aplica efeito do abismo
                 String msgAbismo = abismo.aplicarEfeito(atual, board, valorDadoLancado);
+
+                // (opcional, mas normalmente faz sentido) remover abismo após ativar
+                // se o teu jogo quiser abismos permanentes, apaga esta linha.
+                abismosNaPosicao[pos] = null;
 
                 if (msgAbismo != null && !msgAbismo.isEmpty()) {
                     if (mensagem.length() > 0) {
@@ -463,17 +471,17 @@ public class GameManager {
             }
         }
 
-        // 3) Atualizar vitória (depois do efeito do abismo)
+        // --- 3) Vitória ---
         int novaPos = board.getPlayerPosicao(idJogador);
         if (board.posicaoVitoria(novaPos) && winnerId == null) {
             winnerId = idJogador;
         }
 
-        // 4) Avançar o turno para o próximo jogador e contar turno
+        // --- 4) Avançar turno e contar turno (sempre) ---
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         totalTurns++;
 
-        // 5) Se não aconteceu nada na casa (sem ferramenta e sem abismo), devolve null
+        // --- 5) Se não houve nada, devolve null ---
         if (mensagem.length() == 0) {
             return null;
         }

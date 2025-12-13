@@ -160,4 +160,13 @@ public class Player {
         return "Em Jogo";
     }
 
+    public boolean temFerramentaComId(int idFerramenta) {
+        for (Ferramentas f : ferramentas) {
+            if (f != null && f.getId() == idFerramenta) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }
