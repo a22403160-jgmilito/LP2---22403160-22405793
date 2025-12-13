@@ -9,13 +9,16 @@ public class Player {
     private String linguagens;
     private String cor;
     private int posicao;
-    private Estado estado;
+    private boolean isAlive = true;     // true = Em jogo / Preso, false = Derrotado
+    private boolean isEnabled = true;   // true = ativo, false = Preso
+
 
     public Player(int id, String nome, String linguagens, String cor) {
         this.id = id;
         this.nome = nome;
         this.linguagens = linguagens;
         this.cor = cor;
+
 
         // posição inicial = 1
         this.posicao = 1;
@@ -124,22 +127,37 @@ public class Player {
         return String.join(";", nomes);
     }
 
-    public Estado getEstado() {
-        return estado;
+    public boolean isAlive() {
+        return isAlive;
     }
 
-    public void setEstado(Estado estado) {
-        if (estado != null) {
-            this.estado = estado;
+    public void setAlive(boolean alive) {
+        this.isAlive = alive;
+        if (!alive) {
+            // se morrer, deixa de fazer sentido estar "ativo"
+            this.isEnabled = false;
+        }
+    }
+
+    public boolean isEnabled() {
+        return isEnabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        // só pode ficar enabled se estiver vivo
+        if (isAlive) {
+            this.isEnabled = enabled;
         }
     }
 
     public String getEstadoComoTexto() {
-        switch (estado) {
-            case PRESO: return "Preso";
-            case DERROTADO: return "Derrotado";
-            default: return "Em Jogo";
+        if (!isAlive) {
+            return "Derrotado";
         }
+        if (!isEnabled) {
+            return "Preso";
+        }
+        return "Em Jogo";
     }
 
 }
