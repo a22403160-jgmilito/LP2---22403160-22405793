@@ -8,7 +8,7 @@ public class ErroDeSintaxe extends Abismos {
 
     @Override
     public String getNome() {
-        return "Erro de Sintaxe";
+        return "Erro de sintaxe";
     }
 
     @Override
