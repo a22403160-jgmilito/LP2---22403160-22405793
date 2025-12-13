@@ -74,19 +74,13 @@ public class GameManager {
 
     //alterar essa funcao para chamar o to string do player e nao repetir cogigo
     public String getProgrammerInfoAsStr(int id) {
-        if (players.isEmpty() || board == null) {
+        String[] info = getProgrammerInfo(id);
+        if (info == null) {
             return null;
         }
-        Player p = getPlayerById(id);
-        if (p == null) {
-            return null;
-        }
-        int pos = board.getPlayerPosicao(id);
-        if (p.getPosicao() != pos) {
-            p.setPosicao(pos, board.getSize());
-        }
-        String estado = p.getEstadoComoTexto();
-        return p.toString() + " | " + estado;
+
+        // id | nome | posicao | ferramentas | linguagens | estado
+        return info[0] + " | " + info[1] + " | " + info[4] + " | " + info[5] + " | " + info[2] + " | " + info[6];
     }
     public String[] getSlotInfo(int position) {
 
