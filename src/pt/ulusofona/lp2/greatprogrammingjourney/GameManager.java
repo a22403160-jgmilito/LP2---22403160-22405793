@@ -242,7 +242,8 @@ public class GameManager {
         }
 
         // Cor em MAIÚSCULAS
-        String cor = p.getCor() == null ? "" : p.getCor().toUpperCase();
+        String cor = p.getCor() == null ? "" : p.getCor();
+
 
         // Ferramentas ORDENADAS
         String ferramentas = p.getFerramentasAsString();
