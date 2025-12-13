@@ -54,9 +54,7 @@ public class Board {
         return ids;
     }
     public int movePlayer(int playerId, int nrSpaces) {
-        if (nrSpaces <= 0) {
-            return getPlayerPosicao(playerId);
-        }
+
         Player alvo = null;
         for (Player p : players) {
             if (p.getId() == playerId) {
@@ -67,18 +65,35 @@ public class Board {
         if (alvo == null) {
             return -1;
         }
+
         int pos = alvo.getPosicao();
-        while (nrSpaces > 0) {
-            pos++;
-            if (pos > size) {
-                pos = size - (pos - size);
+
+        // andar para a frente (com "recua o excesso" no fim)
+        if (nrSpaces > 0) {
+            while (nrSpaces > 0) {
+                pos++;
+                if (pos > size) {
+                    pos = size - (pos - size);  // bounce back
+                }
+                nrSpaces--;
             }
-            nrSpaces--;
         }
-        // usa SEMPRE o setPosicao do Player
+        // andar para trás (abismos): nunca desce abaixo de 1
+        else if (nrSpaces < 0) {
+            while (nrSpaces < 0) {
+                pos--;
+                if (pos < 1) {
+                    pos = 1; // clamp
+                }
+                nrSpaces++;
+            }
+        }
+        // nrSpaces == 0 → não mexe
+
         alvo.setPosicao(pos, size);
         return alvo.getPosicao();
     }
+
     public boolean temJogadorNaPosicaoFinal() {
         for (Player p : players) {
             if (p.getPosicao() == size) {

@@ -84,12 +84,16 @@ public class GameManager {
         return info[0] + " | " + info[1] + " | " + info[4] + " | " + info[5] + " | " + info[2] + " | " + info[6];
     }
     public String[] getSlotInfo(int position) {
+
+        // posição inválida -> null
         if (board == null || !board.posicaoValida(position)) {
             return null;
         }
 
+        // posição válida -> SEMPRE array de 3 strings
         String[] res = new String[]{"", "", ""};
 
+        // [0] IDs dos jogadores
         List<Integer> ids = board.getJogadoresNaPosicao(position);
         if (ids != null && !ids.isEmpty()) {
             ArrayList<String> idsStr = new ArrayList<>();
@@ -99,24 +103,22 @@ public class GameManager {
             res[0] = String.join(",", idsStr);
         }
 
-        // Ferramenta tem prioridade
-        if (ferramentasNaPosicao != null && ferramentasNaPosicao[position] != null) {
+        // [1] e [2] Abismo
+        if (abismosNaPosicao != null && abismosNaPosicao[position] != null) {
+            Abismos ab = abismosNaPosicao[position];
+            res[1] = ab.getNome();           // descrição correta
+            res[2] = "A:" + ab.getId();      // tipo
+
+        }
+        // [1] e [2] Ferramenta
+        else if (ferramentasNaPosicao != null && ferramentasNaPosicao[position] != null) {
             Ferramentas f = ferramentasNaPosicao[position];
             res[1] = f.getNome();
             res[2] = "T:" + f.getId();
-            return res;
-        }
-
-        // Depois Abismo
-        if (abismosNaPosicao != null && abismosNaPosicao[position] != null) {
-            Abismos ab = abismosNaPosicao[position];
-            res[1] = ab.getNome();
-            res[2] = "A:" + ab.getId();
         }
 
         return res;
     }
-
 
 
     public int getCurrentPlayerID() {

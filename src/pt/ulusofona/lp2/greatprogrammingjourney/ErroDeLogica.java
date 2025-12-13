@@ -13,19 +13,16 @@ public class ErroDeLogica extends Abismos {
 
     @Override
     public String aplicarEfeito(Player jogador, Board board, int valorDado) {
-
-        int recuo = valorDado / 2; // floor automaticamente
+        int recuo = valorDado / 2;
 
         if (recuo <= 0) {
             return "O programador " + jogador.getNome()
                     + " caiu num Erro de Lógica, mas o impacto foi nulo e não recuou casas.";
         }
 
-        // mover no TABULEIRO
         board.movePlayer(jogador.getId(), -recuo);
 
         int novaPos = board.getPlayerPosicao(jogador.getId());
-
         return "O programador " + jogador.getNome()
                 + " cometeu um Erro de Lógica e recuou " + recuo
                 + " casas, indo para a posição " + novaPos + ".";
