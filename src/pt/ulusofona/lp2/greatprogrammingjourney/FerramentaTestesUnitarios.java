@@ -20,10 +20,9 @@ public class FerramentaTestesUnitarios extends Ferramentas {
 
     @Override
     public boolean podeAnular(Abismos abismo) {
-        // Escolha lógica:
-        // Testes Unitários ajudam a encontrar problemas simples,
-        // como erros de sintaxe, antes da execução.
-        // Therefore → anula Erro de Sintaxe (ID 0).
-        return abismo.getId() == 0;
+        if (abismo == null) {
+            return false;
+        }
+        return abismo.getId() == 0; // Erro de Sintaxe
     }
 }

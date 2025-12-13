@@ -19,9 +19,9 @@ public class Heranca extends Ferramentas {
 
     @Override
     public boolean podeAnular(Abismos abismo) {
-        // POR ENQUANTO: não anula nenhum abismo diretamente.
-        // Quando tiveres o mapeamento ferramenta x abismo:
-        // if (abismo.getId() == 0 /*Erro de Sintaxe*/ ) return true;
-        return false;
+        if (abismo == null) {
+            return false;
+        }
+        return abismo.getId() == 5; // Código Duplicado
     }
 }
