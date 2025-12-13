@@ -169,4 +169,8 @@ public class Player {
         return false;
     }
 
+    public String getLinguagensOriginal() {
+        return linguagens == null ? "" : linguagens.trim();
+    }
+
 }

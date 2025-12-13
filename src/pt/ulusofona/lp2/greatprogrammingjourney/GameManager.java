@@ -60,12 +60,13 @@ public class GameManager {
 
         for (int i = 0; i < players.size(); i++) {
             Player p = players.get(i);
-            String info = getProgrammerInfoAsStr(p.getId());
-            if (info != null) {
-                sb.append(info);
-                if (i < players.size() - 1) {
-                    sb.append("\n");
-                }
+
+            sb.append(p.getNome())
+                    .append(" : ")
+                    .append(p.getFerramentasAsString());
+
+            if (i < players.size() - 1) {
+                sb.append(" | ");
             }
         }
 
@@ -143,7 +144,7 @@ public class GameManager {
             return false;
         }
 
-        // 3) Regra por linguagem inicial
+        // 3) Regra por linguagem inicial (ORDEM ORIGINAL)
         String primeiraLing = getPrimeiraLinguagem(atual);
 
         if ("Assembly".equalsIgnoreCase(primeiraLing)) {
@@ -173,9 +174,15 @@ public class GameManager {
             }
         }
 
-        // 5) Executar movimento
-        int delta = destino - posAtual;
-        board.movePlayer(atual.getId(), delta);
+        // 5) Executar movimento SEM depender de delta negativo
+        while (posAtual < destino) {
+            board.movePlayer(atual.getId(), 1);
+            posAtual++;
+        }
+        while (posAtual > destino) {
+            board.movePlayer(atual.getId(), -1); // se a tua Board NÃO aceitar -1, diz-me e ajusto já abaixo
+            posAtual--;
+        }
 
         return true;
     }
@@ -185,8 +192,7 @@ public class GameManager {
             return "";
         }
 
-        String linguagens = p.getLinguagensNormalizadas();
-
+        String linguagens = p.getLinguagensOriginal();
         if (linguagens == null) {
             return "";
         }
@@ -199,6 +205,7 @@ public class GameManager {
         String[] partes = linguagens.split(";");
         return partes[0].trim();
     }
+
 
 
     public boolean gameIsOver() {
