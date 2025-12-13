@@ -245,7 +245,7 @@ public class GameManager {
         if (playerInfo == null || playerInfo.length == 0) {
             return false;
         }
-        if (worldSize <= 0) {
+        if (worldSize <= 3) {
             return false;
         }
 
