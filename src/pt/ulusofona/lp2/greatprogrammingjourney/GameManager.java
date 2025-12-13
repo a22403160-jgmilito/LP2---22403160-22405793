@@ -245,9 +245,6 @@ public class GameManager {
         if (playerInfo == null || playerInfo.length == 0) {
             return false;
         }
-        if (worldSize <= 3) {
-            return false;
-        }
 
         players.clear();
 
@@ -280,6 +277,16 @@ public class GameManager {
             ferramentasNaPosicao = null;
             return false;
         }
+
+        int tamanhoMinimo = 2 * players.size();
+        if (worldSize < tamanhoMinimo) {
+            players.clear();
+            board = null;
+            abismosNaPosicao = null;
+            ferramentasNaPosicao = null;
+            return false;
+        }
+
         board = new Board(worldSize, players);
         abismosNaPosicao = new Abismos[worldSize + 1];
         ferramentasNaPosicao = new Ferramentas[worldSize + 1];
