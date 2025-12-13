@@ -85,7 +85,7 @@ public class GameManager {
         if (p.getPosicao() != pos) {
             p.setPosicao(pos, board.getSize());
         }
-        String estado = board.posicaoVitoria(pos) ? "Vencedor" : "Em Jogo";
+        String estado = p.getEstadoComoTexto();
         return p.toString() + " | " + estado;
     }
     public String[] getSlotInfo(int position) {
@@ -240,7 +240,7 @@ public class GameManager {
         }
 
         int pos = board.getPlayerPosicao(id);
-        String estado = board.posicaoVitoria(pos) ? "Vencedor" : "Em Jogo";
+        String estado = p.getEstadoComoTexto();
 
         String linguagens = p.getLinguagensNormalizadas();
         if (linguagens == null || linguagens.isEmpty()) {

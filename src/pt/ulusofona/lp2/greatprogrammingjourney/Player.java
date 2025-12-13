@@ -9,6 +9,7 @@ public class Player {
     private String linguagens;
     private String cor;
     private int posicao;
+    private Estado estado;
 
     public Player(int id, String nome, String linguagens, String cor) {
         this.id = id;
@@ -121,6 +122,24 @@ public class Player {
 
         // Sem espaços, como no enunciado: "IDE;Herança"
         return String.join(";", nomes);
+    }
+
+    public Estado getEstado() {
+        return estado;
+    }
+
+    public void setEstado(Estado estado) {
+        if (estado != null) {
+            this.estado = estado;
+        }
+    }
+
+    public String getEstadoComoTexto() {
+        switch (estado) {
+            case PRESO: return "Preso";
+            case DERROTADO: return "Derrotado";
+            default: return "Em Jogo";
+        }
     }
 
 }
