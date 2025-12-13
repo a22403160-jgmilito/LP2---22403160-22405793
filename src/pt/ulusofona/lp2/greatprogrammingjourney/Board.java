@@ -109,4 +109,22 @@ public class Board {
         }
         return mapa;
     }
+
+    public void setPlayerPosicao(int playerId, int pos) {
+        Player alvo = null;
+        for (Player p : players) {
+            if (p.getId() == playerId) {
+                alvo = p;
+                break;
+            }
+        }
+        if (alvo == null) {
+            return;
+        }
+
+        if (pos < 1) pos = 1;
+        if (pos > size) pos = size;
+
+        alvo.setPosicao(pos, size);
+    }
 }
