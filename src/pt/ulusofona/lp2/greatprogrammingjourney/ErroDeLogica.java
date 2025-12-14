@@ -13,7 +13,20 @@ public class ErroDeLogica extends Abismos {
 
     @Override
     public String aplicarEfeito(Player jogador, Board board, int valorDado) {
-        int recuo = (valorDado + 1) / 2;
+
+        int recuo = 0;
+
+        if (valorDado == 3){
+            recuo = 1;
+        }
+
+        if (valorDado == 5){
+            recuo = 2;
+        }
+
+        if (valorDado == 6){
+            recuo = 3;
+        }
 
         if (recuo <= 0) {
             return "O programador " + jogador.getNome()
@@ -27,5 +40,4 @@ public class ErroDeLogica extends Abismos {
                 + " cometeu um Erro de Lógica e recuou " + recuo
                 + " casas, indo para a posição " + novaPos + ".";
     }
-
 }
