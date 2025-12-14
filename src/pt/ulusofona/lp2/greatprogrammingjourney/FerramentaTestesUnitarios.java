@@ -23,6 +23,6 @@ public class FerramentaTestesUnitarios extends Ferramentas {
         if (abismo == null) {
             return false;
         }
-        return abismo.getId() == 0; // Erro de Sintaxe
+        return abismo.getId() == 1; // Erro de logica
     }
 }
