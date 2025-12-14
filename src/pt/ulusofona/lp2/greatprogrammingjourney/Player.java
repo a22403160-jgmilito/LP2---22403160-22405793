@@ -11,6 +11,7 @@ public class Player {
     private int posicao;
     private boolean isAlive = true;     // true = Em jogo / Preso, false = Derrotado
     private boolean isEnabled = true;   // true = ativo, false = Preso
+    private final ArrayList<Integer> historicoPosicoes = new ArrayList<>();
 
 
     public Player(int id, String nome, String linguagens, String cor) {
@@ -172,5 +173,13 @@ public class Player {
     public String getLinguagensOriginal() {
         return linguagens == null ? "" : linguagens.trim();
     }
+
+    public void registarPosicao(int pos) {
+        // evita repetir a mesma posição seguida
+        if (historicoPosicoes.isEmpty() || historicoPosicoes.get(historicoPosicoes.size() - 1) != pos) {
+            historicoPosicoes.add(pos);
+        }
+    }
+
 
 }

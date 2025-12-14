@@ -160,8 +160,10 @@ public class GameManager {
         // Guardar o valor do dado (usado por Erro de Lógica)
         valorDadoLancado = nrSpaces;
 
-        // 4) Calcular destino com recuo do excesso
+        // 4) Posição atual e REGISTO NO HISTÓRICO (antes de mover)
         int posAtual = board.getPlayerPosicao(atual.getId());
+        atual.registarPosicao(posAtual);   // importante para o Código Duplicado
+
         int fim = board.getSize();
 
         int destino = posAtual + nrSpaces;
@@ -174,18 +176,22 @@ public class GameManager {
             }
         }
 
-        // 5) Executar movimento SEM depender de delta negativo
+        // 5) Executar movimento SEM depender de delta grande negativo/positivo
         while (posAtual < destino) {
             board.movePlayer(atual.getId(), 1);
             posAtual++;
         }
         while (posAtual > destino) {
-            board.movePlayer(atual.getId(), -1); // se a tua Board NÃO aceitar -1, diz-me e ajusto já abaixo
+            board.movePlayer(atual.getId(), -1);
             posAtual--;
         }
 
+        // 6) REGISTO NO HISTÓRICO (depois de mover)
+        atual.registarPosicao(posAtual);   // posAtual agora é o destino
+
         return true;
     }
+
 
     private String getPrimeiraLinguagem(Player p) {
         if (p == null) {
