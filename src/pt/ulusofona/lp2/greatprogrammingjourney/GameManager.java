@@ -341,10 +341,6 @@ public class GameManager {
         };
     }
 
-
-
-
-
     //part 2
     public boolean createInitialBoard(String[][] playerInfo, int worldSize, String[][] abyssesAndTools) {
         lastAbyssesAndTools = abyssesAndTools;
@@ -494,23 +490,14 @@ public class GameManager {
                         || (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length && ferramentasNaPosicao[pos] != null)
                         || (casaTeveFerramenta != null && pos >= 1 && pos < casaTeveFerramenta.length && casaTeveFerramenta[pos]);
 
-        // 1) Ferramenta (NÃO remover do tabuleiro)
+        /* 1) Ferramenta (NÃO remover do tabuleiro) */
         Ferramentas ferramenta = null;
         if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
             ferramenta = ferramentasNaPosicao[pos];
         }
 
         if (ferramenta != null) {
-            // Verificar se já tem uma ferramenta do mesmo tipo (mesma classe)
-            boolean jaTem = false;
-            for (Ferramentas f : atual.getFerramentas()) { // <- precisa existir no teu Player
-                if (f != null && f.getClass().equals(ferramenta.getClass())) {
-                    jaTem = true;
-                    break;
-                }
-            }
-
-            if (!jaTem) {
+            if (!atual.temFerramentaComId(ferramenta.getId())) {
                 atual.adicionarFerramenta(ferramenta);
 
                 mensagem.append("O programador ")
@@ -519,10 +506,10 @@ public class GameManager {
                         .append(ferramenta.getNome())
                         .append(".");
             }
-            // IMPORTANTE: NÃO fazer ferramentasNaPosicao[pos] = null;
+            // Importante: a ferramenta permanece no tabuleiro
         }
 
-        // 2) Abismo
+        /* 2) Abismo */
         Abismos abismo = null;
         if (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length) {
             abismo = abismosNaPosicao[pos];
@@ -557,13 +544,13 @@ public class GameManager {
             }
         }
 
-        // 3) vitória
+        /* 3) Vitória */
         int novaPos = board.getPlayerPosicao(idJogador);
         if (board.posicaoVitoria(novaPos) && winnerId == null) {
             winnerId = idJogador;
         }
 
-        // 4) avançar turno
+        /* 4) Avançar turno */
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         totalTurns++;
 
@@ -574,15 +561,12 @@ public class GameManager {
         return mensagem.toString();
     }
 
-
-
     public boolean saveGame(File file) {
         if (board == null || players.isEmpty() || file == null) {
             return false;
         }
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
-
             // 1) Linha WORLD
             int worldSize = board.getSize();
             int winner = (winnerId == null) ? -1 : winnerId;
@@ -593,7 +577,6 @@ public class GameManager {
             // 2) Número de jogadores
             bw.write("PLAYERS;" + players.size());
             bw.newLine();
-
             // 3) Cada jogador
             for (Player p : players) {
                 int pos = board.getPlayerPosicao(p.getId());
@@ -605,7 +588,6 @@ public class GameManager {
                 bw.write("PLAYER;" + p.getId() + ";" + nome + ";" + linguagens + ";" + cor + ";" + pos);
                 bw.newLine();
             }
-
             // 4) Abismos
             int nAbismos = 0;
             if (abismosNaPosicao != null) {
@@ -626,7 +608,6 @@ public class GameManager {
                     }
                 }
             }
-
             // 5) Ferramentas
             int nTools = 0;
             if (ferramentasNaPosicao != null) {
@@ -647,9 +628,7 @@ public class GameManager {
                     }
                 }
             }
-
             return true;
-
         } catch (IOException e) {
             e.printStackTrace();
             return false;
@@ -661,224 +640,204 @@ public class GameManager {
             throw new java.io.FileNotFoundException("Ficheiro não encontrado: " + file);
         }
 
-        int worldSize;
-        int loadedTotalTurns;
-        int loadedCurrentPlayerIndex;
-        Integer loadedWinnerId;
-
         ArrayList<Player> loadedPlayers = new ArrayList<>();
         ArrayList<Integer> loadedPositions = new ArrayList<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 
-            String line = br.readLine();
-            if (line == null) {
-                throw new InvalidFileException("Ficheiro vazio.");
-            }
+            int[] w = readWorldLine(br);
+            int worldSize = w[0];
+            int loadedTotalTurns = w[1];
+            int loadedCurrentPlayerIndex = w[2];
+            int winnerRaw = w[3];
 
-            // 1) WORLD;...
-            String[] partes = line.split(";");
-            if (partes.length != 5 || !partes[0].equals("WORLD")) {
-                throw new InvalidFileException("Cabeçalho WORLD inválido.");
-            }
-
-            try {
-                worldSize = Integer.parseInt(partes[1]);
-                loadedTotalTurns = Integer.parseInt(partes[2]);
-                loadedCurrentPlayerIndex = Integer.parseInt(partes[3]);
-                int wId = Integer.parseInt(partes[4]);
-                loadedWinnerId = (wId < 0) ? null : wId;
-            } catch (NumberFormatException e) {
-                throw new InvalidFileException("Valores numéricos inválidos no cabeçalho WORLD.");
-            }
-
-            if (worldSize <= 0) {
-                throw new InvalidFileException("Tamanho do tabuleiro inválido: " + worldSize);
-            }
-
-            // 2) PLAYERS;N
-            line = br.readLine();
-            if (line == null) {
-                throw new InvalidFileException("Linha PLAYERS em falta.");
-            }
-
-            partes = line.split(";");
-            if (partes.length != 2 || !partes[0].equals("PLAYERS")) {
-                throw new InvalidFileException("Linha PLAYERS inválida.");
-            }
-
-            int nPlayers;
-            try {
-                nPlayers = Integer.parseInt(partes[1]);
-            } catch (NumberFormatException e) {
-                throw new InvalidFileException("Número de jogadores inválido.");
-            }
-
-            if (nPlayers <= 0) {
-                throw new InvalidFileException("Número de jogadores tem de ser > 0.");
-            }
-
-            // 3) N linhas PLAYER
-            for (int i = 0; i < nPlayers; i++) {
-                line = br.readLine();
-                if (line == null) {
-                    throw new InvalidFileException("Linha PLAYER em falta (esperava " + nPlayers + ").");
-                }
-
-                partes = line.split(";");
-                if (partes.length != 6 || !partes[0].equals("PLAYER")) {
-                    throw new InvalidFileException("Linha PLAYER inválida: " + line);
-                }
-
-                try {
-                    int id = Integer.parseInt(partes[1]);
-                    String nome = partes[2];
-                    String linguagens = partes[3];
-                    String cor = partes[4];
-                    int pos = Integer.parseInt(partes[5]);
-
-                    if (pos < 1 || pos > worldSize) {
-                        throw new InvalidFileException("Posição inválida para o jogador " + id + ": " + pos);
-                    }
-
-                    Player p = new Player(id, nome, linguagens, cor);
-                    loadedPlayers.add(p);
-                    loadedPositions.add(pos);
-
-                } catch (NumberFormatException e) {
-                    throw new InvalidFileException("Valores numéricos inválidos na linha PLAYER: " + line);
-                }
-            }
+            readPlayersBlock(br, worldSize, loadedPlayers, loadedPositions);
 
             if (loadedCurrentPlayerIndex < 0 || loadedCurrentPlayerIndex >= loadedPlayers.size()) {
                 throw new InvalidFileException("Índice de jogador atual inválido: " + loadedCurrentPlayerIndex);
             }
 
-            // --- Aplicar base do jogo ---
-            players.clear();
-            players.addAll(loadedPlayers);
+            applyLoadedBase(worldSize, loadedPlayers, loadedPositions);
 
-            board = new Board(worldSize, players);
-
-            abismosNaPosicao = new Abismos[worldSize + 1];
-            ferramentasNaPosicao = new Ferramentas[worldSize + 1];
-            casaTeveFerramenta = new boolean[worldSize + 1];
-
-            // Colocar jogadores nas posições
-            for (int i = 0; i < players.size(); i++) {
-                Player p = players.get(i);
-                int pos = loadedPositions.get(i);
-                int delta = pos - 1;
-                if (delta > 0) {
-                    board.movePlayer(p.getId(), delta);
-                }
-            }
-
-            // 4) ABYSSES;N
-            line = br.readLine();
-            if (line != null) {
-                partes = line.split(";");
-                if (partes.length != 2 || !partes[0].equals("ABYSSES")) {
-                    throw new InvalidFileException("Linha ABYSSES inválida.");
-                }
-
-                int nAbismos;
-                try {
-                    nAbismos = Integer.parseInt(partes[1]);
-                } catch (NumberFormatException e) {
-                    throw new InvalidFileException("Número de abismos inválido.");
-                }
-
-                for (int i = 0; i < nAbismos; i++) {
-                    line = br.readLine();
-                    if (line == null) {
-                        throw new InvalidFileException("Linha ABYSS em falta (esperava " + nAbismos + ").");
-                    }
-
-                    partes = line.split(";");
-                    if (partes.length != 3 || !partes[0].equals("ABYSS")) {
-                        throw new InvalidFileException("Linha ABYSS inválida: " + line);
-                    }
-
-                    int abyssId, pos;
-                    try {
-                        abyssId = Integer.parseInt(partes[1]);
-                        pos = Integer.parseInt(partes[2]);
-                    } catch (NumberFormatException e) {
-                        throw new InvalidFileException("Valores numéricos inválidos na linha ABYSS: " + line);
-                    }
-
-                    if (pos < 1 || pos > worldSize) {
-                        throw new InvalidFileException("Posição inválida de abismo: " + pos);
-                    }
-
-                    Abismos ab = criarAbismoPorId(abyssId);
-                    if (ab == null) {
-                        throw new InvalidFileException("Id de abismo inválido: " + abyssId);
-                    }
-
-                    abismosNaPosicao[pos] = ab;
-                }
-
-                // 5) TOOLS;N
-                line = br.readLine();
-                if (line == null) {
-                    throw new InvalidFileException("Linha TOOLS em falta.");
-                }
-
-                partes = line.split(";");
-                if (partes.length != 2 || !partes[0].equals("TOOLS")) {
-                    throw new InvalidFileException("Linha TOOLS inválida.");
-                }
-
-                int nTools;
-                try {
-                    nTools = Integer.parseInt(partes[1]);
-                } catch (NumberFormatException e) {
-                    throw new InvalidFileException("Número de ferramentas inválido.");
-                }
-
-                for (int i = 0; i < nTools; i++) {
-                    line = br.readLine();
-                    if (line == null) {
-                        throw new InvalidFileException("Linha TOOL em falta (esperava " + nTools + ").");
-                    }
-
-                    partes = line.split(";");
-                    if (partes.length != 3 || !partes[0].equals("TOOL")) {
-                        throw new InvalidFileException("Linha TOOL inválida: " + line);
-                    }
-
-                    int toolId, pos;
-                    try {
-                        toolId = Integer.parseInt(partes[1]);
-                        pos = Integer.parseInt(partes[2]);
-                    } catch (NumberFormatException e) {
-                        throw new InvalidFileException("Valores numéricos inválidos na linha TOOL: " + line);
-                    }
-
-                    if (pos < 1 || pos > worldSize) {
-                        throw new InvalidFileException("Posição inválida de ferramenta: " + pos);
-                    }
-
-                    Ferramentas f = criarFerramentaPorId(toolId);
-                    if (f == null) {
-                        throw new InvalidFileException("Id de ferramenta inválido: " + toolId);
-                    }
-
-                    ferramentasNaPosicao[pos] = f;
-                    casaTeveFerramenta[pos] = true; // importante para "casa especial"
-                }
-            }
+            readAbyssesBlock(br, worldSize);
+            readToolsBlock(br, worldSize);
 
             totalTurns = loadedTotalTurns;
             currentPlayerIndex = loadedCurrentPlayerIndex;
-            winnerId = loadedWinnerId;
+            winnerId = (winnerRaw < 0) ? null : winnerRaw;
 
         } catch (IOException e) {
             throw new InvalidFileException("Erro ao ler o ficheiro: " + e.getMessage());
         }
     }
 
-}
 
+    private int parseIntOrThrow(String s, String erro) throws InvalidFileException {
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            throw new InvalidFileException(erro);
+        }
+    }
+
+    private String[] splitOrThrow(String line, String erro) throws InvalidFileException {
+        if (line == null) {
+            throw new InvalidFileException(erro);
+        }
+        return line.split(";");
+    }
+
+    private int[] readWorldLine(BufferedReader br) throws IOException, InvalidFileException {
+        String line = br.readLine();
+        String[] p = splitOrThrow(line, "Ficheiro vazio.");
+
+        if (p.length != 5 || !"WORLD".equals(p[0])) {
+            throw new InvalidFileException("Cabeçalho WORLD inválido.");
+        }
+
+        int worldSize = parseIntOrThrow(p[1], "WORLD size inválido.");
+        int totalTurns = parseIntOrThrow(p[2], "WORLD totalTurns inválido.");
+        int currentIndex = parseIntOrThrow(p[3], "WORLD currentPlayerIndex inválido.");
+        int winnerRaw = parseIntOrThrow(p[4], "WORLD winner inválido.");
+
+        if (worldSize <= 0) {
+            throw new InvalidFileException("Tamanho do tabuleiro inválido: " + worldSize);
+        }
+        return new int[]{worldSize, totalTurns, currentIndex, winnerRaw};
+    }
+
+    private void readPlayersBlock(BufferedReader br, int worldSize,
+                                  ArrayList<Player> loadedPlayers,
+                                  ArrayList<Integer> loadedPositions) throws IOException, InvalidFileException {
+
+        String line = br.readLine();
+        String[] p = splitOrThrow(line, "Linha PLAYERS em falta.");
+
+        if (p.length != 2 || !"PLAYERS".equals(p[0])) {
+            throw new InvalidFileException("Linha PLAYERS inválida.");
+        }
+
+        int nPlayers = parseIntOrThrow(p[1], "Número de jogadores inválido.");
+        if (nPlayers <= 0) {
+            throw new InvalidFileException("Número de jogadores tem de ser > 0.");
+        }
+
+        for (int i = 0; i < nPlayers; i++) {
+            line = br.readLine();
+            p = splitOrThrow(line, "Linha PLAYER em falta (esperava " + nPlayers + ").");
+
+            if (p.length != 6 || !"PLAYER".equals(p[0])) {
+                throw new InvalidFileException("Linha PLAYER inválida: " + line);
+            }
+
+            int id = parseIntOrThrow(p[1], "Id inválido em PLAYER.");
+            String nome = p[2];
+            String linguagens = p[3];
+            String cor = p[4];
+            int pos = parseIntOrThrow(p[5], "Posição inválida em PLAYER.");
+
+            if (pos < 1 || pos > worldSize) {
+                throw new InvalidFileException("Posição inválida para o jogador " + id + ": " + pos);
+            }
+
+            loadedPlayers.add(new Player(id, nome, linguagens, cor));
+            loadedPositions.add(pos);
+        }
+    }
+
+    private void applyLoadedBase(int worldSize,
+                                 ArrayList<Player> loadedPlayers,
+                                 ArrayList<Integer> loadedPositions) {
+
+        players.clear();
+        players.addAll(loadedPlayers);
+
+        board = new Board(worldSize, players);
+
+        abismosNaPosicao = new Abismos[worldSize + 1];
+        ferramentasNaPosicao = new Ferramentas[worldSize + 1];
+        casaTeveFerramenta = new boolean[worldSize + 1];
+
+        for (int i = 0; i < players.size(); i++) {
+            Player p = players.get(i);
+            int pos = loadedPositions.get(i);
+            int delta = pos - 1;
+            if (delta > 0) {
+                board.movePlayer(p.getId(), delta);
+            }
+        }
+    }
+
+    private void readAbyssesBlock(BufferedReader br, int worldSize) throws IOException, InvalidFileException {
+        String line = br.readLine();
+        if (line == null) {
+            return; // compatível com ficheiros antigos
+        }
+
+        String[] p = line.split(";");
+        if (p.length != 2 || !"ABYSSES".equals(p[0])) {
+            throw new InvalidFileException("Linha ABYSSES inválida.");
+        }
+
+        int n = parseIntOrThrow(p[1], "Número de abismos inválido.");
+        for (int i = 0; i < n; i++) {
+            line = br.readLine();
+            p = splitOrThrow(line, "Linha ABYSS em falta (esperava " + n + ").");
+
+            if (p.length != 3 || !"ABYSS".equals(p[0])) {
+                throw new InvalidFileException("Linha ABYSS inválida: " + line);
+            }
+
+            int abyssId = parseIntOrThrow(p[1], "Id de abismo inválido.");
+            int pos = parseIntOrThrow(p[2], "Posição de abismo inválida.");
+
+            if (pos < 1 || pos > worldSize) {
+                throw new InvalidFileException("Posição inválida de abismo: " + pos);
+            }
+
+            Abismos ab = criarAbismoPorId(abyssId);
+            if (ab == null) {
+                throw new InvalidFileException("Id de abismo inválido: " + abyssId);
+            }
+
+            abismosNaPosicao[pos] = ab;
+        }
+    }
+
+    private void readToolsBlock(BufferedReader br, int worldSize) throws IOException, InvalidFileException {
+        String line = br.readLine();
+        if (line == null) {
+            return;
+        }
+
+        String[] p = line.split(";");
+        if (p.length != 2 || !"TOOLS".equals(p[0])) {
+            throw new InvalidFileException("Linha TOOLS inválida.");
+        }
+
+        int n = parseIntOrThrow(p[1], "Número de ferramentas inválido.");
+        for (int i = 0; i < n; i++) {
+            line = br.readLine();
+            p = splitOrThrow(line, "Linha TOOL em falta (esperava " + n + ").");
+
+            if (p.length != 3 || !"TOOL".equals(p[0])) {
+                throw new InvalidFileException("Linha TOOL inválida: " + line);
+            }
+
+            int toolId = parseIntOrThrow(p[1], "Id de ferramenta inválido.");
+            int pos = parseIntOrThrow(p[2], "Posição de ferramenta inválida.");
+
+            if (pos < 1 || pos > worldSize) {
+                throw new InvalidFileException("Posição inválida de ferramenta: " + pos);
+            }
+
+            Ferramentas f = criarFerramentaPorId(toolId);
+            if (f == null) {
+                throw new InvalidFileException("Id de ferramenta inválido: " + toolId);
+            }
+
+            ferramentasNaPosicao[pos] = f;
+            casaTeveFerramenta[pos] = true;
+        }
+    }
+}
