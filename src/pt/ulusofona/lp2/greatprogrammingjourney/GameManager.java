@@ -489,27 +489,37 @@ public class GameManager {
 
         StringBuilder mensagem = new StringBuilder();
 
-
         boolean casaEspecial =
                 (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length && abismosNaPosicao[pos] != null)
                         || (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length && ferramentasNaPosicao[pos] != null)
                         || (casaTeveFerramenta != null && pos >= 1 && pos < casaTeveFerramenta.length && casaTeveFerramenta[pos]);
 
-        // 1) Ferramenta
+        // 1) Ferramenta (NÃO remover do tabuleiro)
         Ferramentas ferramenta = null;
         if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
             ferramenta = ferramentasNaPosicao[pos];
         }
 
         if (ferramenta != null) {
-            atual.adicionarFerramenta(ferramenta);
-            ferramentasNaPosicao[pos] = null; // remove do tabuleiro
+            // Verificar se já tem uma ferramenta do mesmo tipo (mesma classe)
+            boolean jaTem = false;
+            for (Ferramentas f : atual.getFerramentas()) { // <- precisa existir no teu Player
+                if (f != null && f.getClass().equals(ferramenta.getClass())) {
+                    jaTem = true;
+                    break;
+                }
+            }
 
-            mensagem.append("O programador ")
-                    .append(atual.getNome())
-                    .append(" apanhou a ferramenta ")
-                    .append(ferramenta.getNome())
-                    .append(".");
+            if (!jaTem) {
+                atual.adicionarFerramenta(ferramenta);
+
+                mensagem.append("O programador ")
+                        .append(atual.getNome())
+                        .append(" apanhou a ferramenta ")
+                        .append(ferramenta.getNome())
+                        .append(".");
+            }
+            // IMPORTANTE: NÃO fazer ferramentasNaPosicao[pos] = null;
         }
 
         // 2) Abismo
@@ -557,13 +567,13 @@ public class GameManager {
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         totalTurns++;
 
-        // Se a casa for especial (abismo ou casa de ferramenta), NÃO pode devolver null.
         if (mensagem.length() == 0) {
             return casaEspecial ? "" : null;
         }
 
         return mensagem.toString();
     }
+
 
 
     public boolean saveGame(File file) {
@@ -584,7 +594,7 @@ public class GameManager {
             bw.write("PLAYERS;" + players.size());
             bw.newLine();
 
-            // 3) Cada jogador numa linha PLAYER
+            // 3) Cada jogador
             for (Player p : players) {
                 int pos = board.getPlayerPosicao(p.getId());
 
@@ -595,6 +605,49 @@ public class GameManager {
                 bw.write("PLAYER;" + p.getId() + ";" + nome + ";" + linguagens + ";" + cor + ";" + pos);
                 bw.newLine();
             }
+
+            // 4) Abismos
+            int nAbismos = 0;
+            if (abismosNaPosicao != null) {
+                for (int i = 1; i < abismosNaPosicao.length; i++) {
+                    if (abismosNaPosicao[i] != null) {
+                        nAbismos++;
+                    }
+                }
+            }
+            bw.write("ABYSSES;" + nAbismos);
+            bw.newLine();
+
+            if (abismosNaPosicao != null) {
+                for (int i = 1; i < abismosNaPosicao.length; i++) {
+                    if (abismosNaPosicao[i] != null) {
+                        bw.write("ABYSS;" + abismosNaPosicao[i].getId() + ";" + i);
+                        bw.newLine();
+                    }
+                }
+            }
+
+            // 5) Ferramentas
+            int nTools = 0;
+            if (ferramentasNaPosicao != null) {
+                for (int i = 1; i < ferramentasNaPosicao.length; i++) {
+                    if (ferramentasNaPosicao[i] != null) {
+                        nTools++;
+                    }
+                }
+            }
+            bw.write("TOOLS;" + nTools);
+            bw.newLine();
+
+            if (ferramentasNaPosicao != null) {
+                for (int i = 1; i < ferramentasNaPosicao.length; i++) {
+                    if (ferramentasNaPosicao[i] != null) {
+                        bw.write("TOOL;" + ferramentasNaPosicao[i].getId() + ";" + i);
+                        bw.newLine();
+                    }
+                }
+            }
+
             return true;
 
         } catch (IOException e) {
@@ -602,11 +655,12 @@ public class GameManager {
             return false;
         }
     }
+
     public void loadGame(File file) throws InvalidFileException, java.io.FileNotFoundException {
         if (file == null || !file.exists()) {
             throw new java.io.FileNotFoundException("Ficheiro não encontrado: " + file);
         }
-        // Variáveis temporárias
+
         int worldSize;
         int loadedTotalTurns;
         int loadedCurrentPlayerIndex;
@@ -664,7 +718,7 @@ public class GameManager {
                 throw new InvalidFileException("Número de jogadores tem de ser > 0.");
             }
 
-            // 3) N linhas PLAYER;...
+            // 3) N linhas PLAYER
             for (int i = 0; i < nPlayers; i++) {
                 line = br.readLine();
                 if (line == null) {
@@ -696,37 +750,127 @@ public class GameManager {
                 }
             }
 
-            // Validação extra: currentPlayerIndex
             if (loadedCurrentPlayerIndex < 0 || loadedCurrentPlayerIndex >= loadedPlayers.size()) {
                 throw new InvalidFileException("Índice de jogador atual inválido: " + loadedCurrentPlayerIndex);
             }
 
-            // --- Se chegou aqui, os dados são válidos → aplicar ao jogo ---
-
+            // --- Aplicar base do jogo ---
             players.clear();
             players.addAll(loadedPlayers);
 
-            // Cria novo tabuleiro (isto põe todos na posição 1)
             board = new Board(worldSize, players);
 
-            // Limpa abismos e ferramentas (por agora não estamos a restaurar isso)
             abismosNaPosicao = new Abismos[worldSize + 1];
             ferramentasNaPosicao = new Ferramentas[worldSize + 1];
+            casaTeveFerramenta = new boolean[worldSize + 1];
 
-            // Coloca cada jogador na posição correta
+            // Colocar jogadores nas posições
             for (int i = 0; i < players.size(); i++) {
                 Player p = players.get(i);
                 int pos = loadedPositions.get(i);
-
-                // todos estão em 1; queremos ir até 'pos' usando a lógica normal do jogo
-                int delta = pos - 1;  // a partir da casa 1
-
+                int delta = pos - 1;
                 if (delta > 0) {
                     board.movePlayer(p.getId(), delta);
                 }
             }
 
-            // Restaura estado do jogo
+            // 4) ABYSSES;N
+            line = br.readLine();
+            if (line != null) {
+                partes = line.split(";");
+                if (partes.length != 2 || !partes[0].equals("ABYSSES")) {
+                    throw new InvalidFileException("Linha ABYSSES inválida.");
+                }
+
+                int nAbismos;
+                try {
+                    nAbismos = Integer.parseInt(partes[1]);
+                } catch (NumberFormatException e) {
+                    throw new InvalidFileException("Número de abismos inválido.");
+                }
+
+                for (int i = 0; i < nAbismos; i++) {
+                    line = br.readLine();
+                    if (line == null) {
+                        throw new InvalidFileException("Linha ABYSS em falta (esperava " + nAbismos + ").");
+                    }
+
+                    partes = line.split(";");
+                    if (partes.length != 3 || !partes[0].equals("ABYSS")) {
+                        throw new InvalidFileException("Linha ABYSS inválida: " + line);
+                    }
+
+                    int abyssId, pos;
+                    try {
+                        abyssId = Integer.parseInt(partes[1]);
+                        pos = Integer.parseInt(partes[2]);
+                    } catch (NumberFormatException e) {
+                        throw new InvalidFileException("Valores numéricos inválidos na linha ABYSS: " + line);
+                    }
+
+                    if (pos < 1 || pos > worldSize) {
+                        throw new InvalidFileException("Posição inválida de abismo: " + pos);
+                    }
+
+                    Abismos ab = criarAbismoPorId(abyssId);
+                    if (ab == null) {
+                        throw new InvalidFileException("Id de abismo inválido: " + abyssId);
+                    }
+
+                    abismosNaPosicao[pos] = ab;
+                }
+
+                // 5) TOOLS;N
+                line = br.readLine();
+                if (line == null) {
+                    throw new InvalidFileException("Linha TOOLS em falta.");
+                }
+
+                partes = line.split(";");
+                if (partes.length != 2 || !partes[0].equals("TOOLS")) {
+                    throw new InvalidFileException("Linha TOOLS inválida.");
+                }
+
+                int nTools;
+                try {
+                    nTools = Integer.parseInt(partes[1]);
+                } catch (NumberFormatException e) {
+                    throw new InvalidFileException("Número de ferramentas inválido.");
+                }
+
+                for (int i = 0; i < nTools; i++) {
+                    line = br.readLine();
+                    if (line == null) {
+                        throw new InvalidFileException("Linha TOOL em falta (esperava " + nTools + ").");
+                    }
+
+                    partes = line.split(";");
+                    if (partes.length != 3 || !partes[0].equals("TOOL")) {
+                        throw new InvalidFileException("Linha TOOL inválida: " + line);
+                    }
+
+                    int toolId, pos;
+                    try {
+                        toolId = Integer.parseInt(partes[1]);
+                        pos = Integer.parseInt(partes[2]);
+                    } catch (NumberFormatException e) {
+                        throw new InvalidFileException("Valores numéricos inválidos na linha TOOL: " + line);
+                    }
+
+                    if (pos < 1 || pos > worldSize) {
+                        throw new InvalidFileException("Posição inválida de ferramenta: " + pos);
+                    }
+
+                    Ferramentas f = criarFerramentaPorId(toolId);
+                    if (f == null) {
+                        throw new InvalidFileException("Id de ferramenta inválido: " + toolId);
+                    }
+
+                    ferramentasNaPosicao[pos] = f;
+                    casaTeveFerramenta[pos] = true; // importante para "casa especial"
+                }
+            }
+
             totalTurns = loadedTotalTurns;
             currentPlayerIndex = loadedCurrentPlayerIndex;
             winnerId = loadedWinnerId;
@@ -735,5 +879,6 @@ public class GameManager {
             throw new InvalidFileException("Erro ao ler o ficheiro: " + e.getMessage());
         }
     }
+
 }
 
