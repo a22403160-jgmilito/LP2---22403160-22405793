@@ -112,14 +112,22 @@ public class GameManager {
         // Índices para arrays (compatível com arrays 0-based OU 1-based)
         int idxAb = -1;
         if (abismosNaPosicao != null) {
-            if (position >= 0 && position < abismosNaPosicao.length) idxAb = position;                 // 1-based
-            else if (position - 1 >= 0 && position - 1 < abismosNaPosicao.length) idxAb = position - 1; // 0-based
+            if (position >= 0 && position < abismosNaPosicao.length){
+                idxAb = position;                 // 1-based
+            }
+            else if (position - 1 >= 0 && position - 1 < abismosNaPosicao.length){
+                idxAb = position - 1; // 0-based
+            }
         }
 
         int idxFerr = -1;
         if (ferramentasNaPosicao != null) {
-            if (position >= 0 && position < ferramentasNaPosicao.length) idxFerr = position;            // 1-based
-            else if (position - 1 >= 0 && position - 1 < ferramentasNaPosicao.length) idxFerr = position - 1; // 0-based
+            if (position >= 0 && position < ferramentasNaPosicao.length){
+                idxFerr = position;            // 1-based
+            }
+            else if (position - 1 >= 0 && position - 1 < ferramentasNaPosicao.length){
+                idxFerr = position - 1; // 0-based
+            }
         }
 
         // [1] e [2] Abismo (TEM PRIORIDADE)
