@@ -23,6 +23,7 @@ public class GameManager {
     private Abismos[] abismosNaPosicao;        // índice = posição no tabuleiro
     private Ferramentas[] ferramentasNaPosicao;
     private int valorDadoLancado = 0;
+    private String[][] lastAbyssesAndTools = null;
 
     public GameManager() {
     }
@@ -36,7 +37,7 @@ public class GameManager {
         return null;
     }
     public boolean createInitialBoard(String[][] playerInfo, int worldSize) {
-        return createInitialBoard(playerInfo, worldSize, null);
+        return createInitialBoard(playerInfo, worldSize, lastAbyssesAndTools);
     }
     public String getImagePng(int nrSquare) {
         if (board == null) {
@@ -93,7 +94,7 @@ public class GameManager {
         // posição válida -> SEMPRE array de 3 strings
         String[] res = new String[]{"", "", ""};
 
-        // [0] IDs dos jogadores
+        // [0] IDs dos jogadores na casa
         List<Integer> ids = board.getJogadoresNaPosicao(position);
         if (ids != null && !ids.isEmpty()) {
             ArrayList<String> idsStr = new ArrayList<>();
@@ -103,18 +104,17 @@ public class GameManager {
             res[0] = String.join(",", idsStr);
         }
 
-        // [1] e [2] Abismo
-        if (abismosNaPosicao != null && abismosNaPosicao[position] != null) {
-            Abismos ab = abismosNaPosicao[position];
-            res[1] = ab.getNome();           // descrição correta
-            res[2] = "A:" + ab.getId();      // tipo
-
-        }
-        // [1] e [2] Ferramenta
-        else if (ferramentasNaPosicao != null && ferramentasNaPosicao[position] != null) {
+        // [1] e [2] Ferramenta (TEM PRIORIDADE)
+        if (ferramentasNaPosicao != null && ferramentasNaPosicao[position] != null) {
             Ferramentas f = ferramentasNaPosicao[position];
             res[1] = f.getNome();
             res[2] = "T:" + f.getId();
+        }
+        // [1] e [2] Abismo
+        else if (abismosNaPosicao != null && abismosNaPosicao[position] != null) {
+            Abismos ab = abismosNaPosicao[position];
+            res[1] = ab.getNome();
+            res[2] = "A:" + ab.getId();
         }
 
         return res;
@@ -335,6 +335,8 @@ public class GameManager {
 
     //part 2
     public boolean createInitialBoard(String[][] playerInfo, int worldSize, String[][] abyssesAndTools) {
+        lastAbyssesAndTools = abyssesAndTools;
+
         if (playerInfo == null || playerInfo.length == 0) {
             return false;
         }
