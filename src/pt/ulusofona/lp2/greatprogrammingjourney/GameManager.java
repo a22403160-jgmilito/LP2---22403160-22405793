@@ -490,26 +490,7 @@ public class GameManager {
                         || (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length && ferramentasNaPosicao[pos] != null)
                         || (casaTeveFerramenta != null && pos >= 1 && pos < casaTeveFerramenta.length && casaTeveFerramenta[pos]);
 
-        /* 1) Ferramenta (NÃO remover do tabuleiro) */
-        Ferramentas ferramenta = null;
-        if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
-            ferramenta = ferramentasNaPosicao[pos];
-        }
-
-        if (ferramenta != null) {
-            if (!atual.temFerramentaComId(ferramenta.getId())) {
-                atual.adicionarFerramenta(ferramenta);
-
-                mensagem.append("O programador ")
-                        .append(atual.getNome())
-                        .append(" apanhou a ferramenta ")
-                        .append(ferramenta.getNome())
-                        .append(".");
-            }
-            // Importante: a ferramenta permanece no tabuleiro
-        }
-
-        /* 2) Abismo */
+        // 1) ABISMO TEM PRIORIDADE
         Abismos abismo = null;
         if (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length) {
             abismo = abismosNaPosicao[pos];
@@ -521,10 +502,6 @@ public class GameManager {
             if (anuladora != null) {
                 atual.removeFerramenta(anuladora);
 
-                if (mensagem.length() > 0) {
-                    mensagem.append(" ");
-                }
-
                 mensagem.append("O programador ")
                         .append(atual.getNome())
                         .append(" usou a ferramenta ")
@@ -534,23 +511,39 @@ public class GameManager {
                         .append(".");
             } else {
                 String msgAbismo = abismo.aplicarEfeito(atual, board, valorDadoLancado);
-
                 if (msgAbismo != null && !msgAbismo.isEmpty()) {
-                    if (mensagem.length() > 0) {
-                        mensagem.append(" ");
-                    }
                     mensagem.append(msgAbismo);
                 }
             }
+        } else {
+            // 2) Só apanha FERRAMENTA se NÃO houver abismo na casa
+            Ferramentas ferramenta = null;
+            if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
+                ferramenta = ferramentasNaPosicao[pos];
+            }
+
+            if (ferramenta != null) {
+                // só apanha se ainda não tiver do mesmo tipo (mesmo id)
+                if (!atual.temFerramentaComId(ferramenta.getId())) {
+                    atual.adicionarFerramenta(ferramenta);
+
+                    mensagem.append("O programador ")
+                            .append(atual.getNome())
+                            .append(" apanhou a ferramenta ")
+                            .append(ferramenta.getNome())
+                            .append(".");
+                }
+                // não remover do tabuleiro
+            }
         }
 
-        /* 3) Vitória */
+        // 3) Vitória
         int novaPos = board.getPlayerPosicao(idJogador);
         if (board.posicaoVitoria(novaPos) && winnerId == null) {
             winnerId = idJogador;
         }
 
-        /* 4) Avançar turno */
+        // 4) Avançar turno
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         totalTurns++;
 
@@ -560,6 +553,7 @@ public class GameManager {
 
         return mensagem.toString();
     }
+
 
     public boolean saveGame(File file) {
         if (board == null || players.isEmpty() || file == null) {
