@@ -24,6 +24,8 @@ public class GameManager {
     private Ferramentas[] ferramentasNaPosicao;
     private int valorDadoLancado = 0;
     private String[][] lastAbyssesAndTools = null;
+    private boolean[] casaTeveFerramenta;
+
 
     public GameManager() {
     }
@@ -99,7 +101,9 @@ public class GameManager {
         if (ids != null && !ids.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < ids.size(); i++) {
-                if (i > 0) sb.append(",");
+                if (i > 0){
+                    sb.append(",");
+                }
                 sb.append(ids.get(i));
             }
             res[0] = sb.toString();
@@ -393,6 +397,7 @@ public class GameManager {
         board = new Board(worldSize, players);
         abismosNaPosicao = new Abismos[worldSize + 1];
         ferramentasNaPosicao = new Ferramentas[worldSize + 1];
+        casaTeveFerramenta = new boolean[worldSize + 1];
 
         if (abyssesAndTools != null) {
             for (String[] linha : abyssesAndTools) {
@@ -433,6 +438,7 @@ public class GameManager {
                         return false;
                     }
                     ferramentasNaPosicao[pos] = f;
+                    casaTeveFerramenta[pos] = true;
                 } else {
                     return false;
                 }
@@ -483,17 +489,21 @@ public class GameManager {
 
         StringBuilder mensagem = new StringBuilder();
 
-        // 1) Verificar se há FERRAMENTA na casa
+
+        boolean casaEspecial =
+                (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length && abismosNaPosicao[pos] != null)
+                        || (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length && ferramentasNaPosicao[pos] != null)
+                        || (casaTeveFerramenta != null && pos >= 1 && pos < casaTeveFerramenta.length && casaTeveFerramenta[pos]);
+
+        // 1) Ferramenta
         Ferramentas ferramenta = null;
         if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
             ferramenta = ferramentasNaPosicao[pos];
         }
 
         if (ferramenta != null) {
-            // jogador apanha a ferramenta
             atual.adicionarFerramenta(ferramenta);
-            // remover a ferramenta do tabuleiro
-            ferramentasNaPosicao[pos] = null;
+            ferramentasNaPosicao[pos] = null; // remove do tabuleiro
 
             mensagem.append("O programador ")
                     .append(atual.getNome())
@@ -502,19 +512,16 @@ public class GameManager {
                     .append(".");
         }
 
-        // 2) Verificar se há ABISMO na casa
+        // 2) Abismo
         Abismos abismo = null;
-        if (abismosNaPosicao != null
-                && pos >= 1 && pos < abismosNaPosicao.length) {
+        if (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length) {
             abismo = abismosNaPosicao[pos];
         }
 
         if (abismo != null) {
-            // ver se o jogador tem ferramenta que anula este abismo
             Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
 
             if (anuladora != null) {
-                // Consome a ferramenta e anula o efeito
                 atual.removeFerramenta(anuladora);
 
                 if (mensagem.length() > 0) {
@@ -528,9 +535,7 @@ public class GameManager {
                         .append(" para anular o abismo ")
                         .append(abismo.getNome())
                         .append(".");
-                // Não chamamos aplicarEfeito
             } else {
-                // Não tem ferramenta aplicável → sofre o efeito do abismo
                 String msgAbismo = abismo.aplicarEfeito(atual, board, valorDadoLancado);
 
                 if (msgAbismo != null && !msgAbismo.isEmpty()) {
@@ -542,23 +547,25 @@ public class GameManager {
             }
         }
 
-        // 3) Atualizar vitória (depois do efeito do abismo)
+        // 3) vitória
         int novaPos = board.getPlayerPosicao(idJogador);
         if (board.posicaoVitoria(novaPos) && winnerId == null) {
             winnerId = idJogador;
         }
 
-        // 4) Avançar o turno para o próximo jogador e contar turno
+        // 4) avançar turno
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         totalTurns++;
 
-        // 5) Se não aconteceu nada na casa (sem ferramenta e sem abismo), devolve null
+        // Se a casa for especial (abismo ou casa de ferramenta), NÃO pode devolver null.
         if (mensagem.length() == 0) {
-            return null;
+            return casaEspecial ? "" : null;
         }
 
         return mensagem.toString();
     }
+
+
     public boolean saveGame(File file) {
         if (board == null || players.isEmpty() || file == null) {
             return false;
