@@ -11,7 +11,6 @@ public class Player {
     private int posicao;
     private boolean isAlive = true;     // true = Em jogo / Preso, false = Derrotado
     private boolean isEnabled = true;   // true = ativo, false = Preso
-    private final ArrayList<Integer> historicoPosicoes = new ArrayList<>();
 
 
     public Player(int id, String nome, String linguagens, String cor) {
