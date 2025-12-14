@@ -145,10 +145,16 @@ public class GameManager {
 
         Player atual = players.get(currentPlayerIndex);
 
-        // 2) Validar estado do jogador
-        if (!atual.isAlive() || !atual.isEnabled()) {
+        if (!atual.isAlive()) {
             return false;
         }
+
+        // Se estiver preso (Ciclo Infinito), não joga, mas moveCurrentPlayer não deve falhar
+        if (!atual.isEnabled()) {
+            valorDadoLancado = nrSpaces;
+            return true;
+        }
+
 
         // 3) Regra por linguagem inicial (ORDEM ORIGINAL)
         String primeiraLing = getPrimeiraLinguagem(atual);
@@ -490,40 +496,58 @@ public class GameManager {
                         || (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length && ferramentasNaPosicao[pos] != null)
                         || (casaTeveFerramenta != null && pos >= 1 && pos < casaTeveFerramenta.length && casaTeveFerramenta[pos]);
 
-        // 1) ABISMO TEM PRIORIDADE
+        // 1) Abismo tem prioridade
         Abismos abismo = null;
         if (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length) {
             abismo = abismosNaPosicao[pos];
         }
 
         if (abismo != null) {
-            Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
 
-            if (anuladora != null) {
-                atual.removeFerramenta(anuladora);
-
-                mensagem.append("O programador ")
-                        .append(atual.getNome())
-                        .append(" usou a ferramenta ")
-                        .append(anuladora.getNome())
-                        .append(" para anular o abismo ")
-                        .append(abismo.getNome())
-                        .append(".");
-            } else {
-                String msgAbismo = abismo.aplicarEfeito(atual, board, valorDadoLancado);
-                if (msgAbismo != null && !msgAbismo.isEmpty()) {
-                    mensagem.append(msgAbismo);
+            // --- Ciclo Infinito (id 8): troca de preso ---
+            if (abismo.getId() == 8) {
+                String msg = aplicarCicloInfinito(atual, pos);
+                if (msg != null && !msg.isEmpty()) {
+                    mensagem.append(msg);
                 }
             }
+            // --- Segmentation Fault (id 9): efeito coletivo ---
+            else if (abismo.getId() == 9) {
+                String msg = aplicarSegmentationFault(pos);
+                if (msg != null && !msg.isEmpty()) {
+                    mensagem.append(msg);
+                }
+            }
+            // --- Abismos normais ---
+            else {
+                Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
+
+                if (anuladora != null) {
+                    atual.removeFerramenta(anuladora);
+
+                    mensagem.append("O programador ")
+                            .append(atual.getNome())
+                            .append(" usou a ferramenta ")
+                            .append(anuladora.getNome())
+                            .append(" para anular o abismo ")
+                            .append(abismo.getNome())
+                            .append(".");
+                } else {
+                    String msgAbismo = abismo.aplicarEfeito(atual, board, valorDadoLancado);
+                    if (msgAbismo != null && !msgAbismo.isEmpty()) {
+                        mensagem.append(msgAbismo);
+                    }
+                }
+            }
+
         } else {
-            // 2) Só apanha FERRAMENTA se NÃO houver abismo na casa
+            // 2) Só apanha ferramenta se NÃO houver abismo
             Ferramentas ferramenta = null;
             if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
                 ferramenta = ferramentasNaPosicao[pos];
             }
 
             if (ferramenta != null) {
-                // só apanha se ainda não tiver do mesmo tipo (mesmo id)
                 if (!atual.temFerramentaComId(ferramenta.getId())) {
                     atual.adicionarFerramenta(ferramenta);
 
@@ -533,7 +557,7 @@ public class GameManager {
                             .append(ferramenta.getNome())
                             .append(".");
                 }
-                // não remover do tabuleiro
+                // ferramenta permanece no tabuleiro
             }
         }
 
@@ -553,6 +577,7 @@ public class GameManager {
 
         return mensagem.toString();
     }
+
 
 
     public boolean saveGame(File file) {
@@ -834,4 +859,100 @@ public class GameManager {
             casaTeveFerramenta[pos] = true;
         }
     }
+
+    private String aplicarCicloInfinito(Player atual, int pos) {
+        // Se tiver ferramenta aplicável, anula (consome) e ninguém fica preso
+        Abismos ab = abismosNaPosicao[pos];
+        Ferramentas anuladora = atual.getFerramentaQueAnula(ab);
+
+        if (anuladora != null) {
+            atual.removeFerramenta(anuladora);
+            return "O programador " + atual.getNome()
+                    + " usou a ferramenta " + anuladora.getNome()
+                    + " para anular o abismo " + ab.getNome() + ".";
+        }
+
+        // Não tem proteção -> liberta um preso que esteja na mesma casa (se existir)
+        List<Integer> ids = board.getJogadoresNaPosicao(pos);
+        if (ids != null) {
+            for (int id : ids) {
+                if (id != atual.getId()) {
+                    Player outro = getPlayerById(id);
+                    if (outro != null && outro.isAlive() && !outro.isEnabled()) {
+                        outro.setEnabled(true);
+                        break; // só liberta 1 (regra: troca)
+                    }
+                }
+            }
+        }
+
+        // Atual fica preso
+        atual.setEnabled(false);
+
+        return "O programador " + atual.getNome()
+                + " entrou num Ciclo Infinito na casa " + pos
+                + " e ficou preso até que outro programador caia na mesma casa.";
+    }
+
+    private void moverJogadorDelta(int playerId, int delta) {
+        int posAtual = board.getPlayerPosicao(playerId);
+        int destino = posAtual + delta;
+
+        if (destino < 1) {
+            destino = 1;
+        }
+        if (destino > board.getSize()) {
+            destino = board.getSize();
+        }
+
+        while (posAtual < destino) {
+            board.movePlayer(playerId, 1);
+            posAtual++;
+        }
+        while (posAtual > destino) {
+            board.movePlayer(playerId, -1);
+            posAtual--;
+        }
+    }
+
+    private String aplicarSegmentationFault(int pos) {
+        List<Integer> ids = board.getJogadoresNaPosicao(pos);
+
+        if (ids == null || ids.size() < 2) {
+            return "";
+        }
+
+        Abismos ab = abismosNaPosicao[pos];
+
+        Player jogadorComProtecao = null;
+        Ferramentas ferramentaUsada = null;
+
+        for (int id : ids) {
+            Player p = getPlayerById(id);
+            if (p != null) {
+                Ferramentas f = p.getFerramentaQueAnula(ab);
+                if (f != null) {
+                    jogadorComProtecao = p;
+                    ferramentaUsada = f;
+                    break;
+                }
+            }
+        }
+
+        if (jogadorComProtecao != null) {
+            jogadorComProtecao.removeFerramenta(ferramentaUsada);
+            return "Segmentation Fault! O programador " + jogadorComProtecao.getNome()
+                    + " usou a ferramenta " + ferramentaUsada.getNome()
+                    + " e o efeito foi anulado para todos os programadores na casa " + pos + ".";
+        }
+
+        for (int id : ids) {
+            moverJogadorDelta(id, -3);
+        }
+
+        return "Segmentation Fault! Como havia vários programadores na casa " + pos
+                + ", todos recuaram 3 casas.";
+    }
+
+
 }
