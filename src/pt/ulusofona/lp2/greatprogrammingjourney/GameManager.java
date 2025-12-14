@@ -86,35 +86,53 @@ public class GameManager {
     }
     public String[] getSlotInfo(int position) {
 
-        // posição inválida -> null
-        if (board == null || !board.posicaoValida(position)) {
+        // Validação: position tem de estar entre 1 e worldSize
+        if (board == null) {
+            return null;
+        }
+        int worldSize = board.getSize();
+        if (position < 1 || position > worldSize) {
             return null;
         }
 
-        // posição válida -> SEMPRE array de 3 strings
+        // Posição válida -> SEMPRE array de 3 strings
         String[] res = new String[]{"", "", ""};
 
-        // [0] IDs dos jogadores na casa
+        // [0] IDs dos jogadores na casa, separados por vírgula
         List<Integer> ids = board.getJogadoresNaPosicao(position);
         if (ids != null && !ids.isEmpty()) {
-            ArrayList<String> idsStr = new ArrayList<>();
-            for (Integer id : ids) {
-                idsStr.add(String.valueOf(id));
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < ids.size(); i++) {
+                if (i > 0) sb.append(",");
+                sb.append(ids.get(i));
             }
-            res[0] = String.join(",", idsStr);
+            res[0] = sb.toString();
         }
 
-        // [1] e [2] Ferramenta (TEM PRIORIDADE)
-        if (ferramentasNaPosicao != null && ferramentasNaPosicao[position] != null) {
-            Ferramentas f = ferramentasNaPosicao[position];
-            res[1] = f.getNome();
-            res[2] = "T:" + f.getId();
+        // Índices para arrays (compatível com arrays 0-based OU 1-based)
+        int idxAb = -1;
+        if (abismosNaPosicao != null) {
+            if (position >= 0 && position < abismosNaPosicao.length) idxAb = position;                 // 1-based
+            else if (position - 1 >= 0 && position - 1 < abismosNaPosicao.length) idxAb = position - 1; // 0-based
         }
-        // [1] e [2] Abismo
-        else if (abismosNaPosicao != null && abismosNaPosicao[position] != null) {
-            Abismos ab = abismosNaPosicao[position];
+
+        int idxFerr = -1;
+        if (ferramentasNaPosicao != null) {
+            if (position >= 0 && position < ferramentasNaPosicao.length) idxFerr = position;            // 1-based
+            else if (position - 1 >= 0 && position - 1 < ferramentasNaPosicao.length) idxFerr = position - 1; // 0-based
+        }
+
+        // [1] e [2] Abismo (TEM PRIORIDADE)
+        if (idxAb != -1 && abismosNaPosicao[idxAb] != null) {
+            Abismos ab = abismosNaPosicao[idxAb];
             res[1] = ab.getNome();
             res[2] = "A:" + ab.getId();
+        }
+        // [1] e [2] Ferramenta (só se NÃO houver abismo)
+        else if (idxFerr != -1 && ferramentasNaPosicao[idxFerr] != null) {
+            Ferramentas f = ferramentasNaPosicao[idxFerr];
+            res[1] = f.getNome();
+            res[2] = "T:" + f.getId();
         }
 
         return res;
