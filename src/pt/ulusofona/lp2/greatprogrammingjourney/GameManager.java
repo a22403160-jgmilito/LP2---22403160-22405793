@@ -175,7 +175,9 @@ public class GameManager {
         if (destino > fim) {
             int excesso = destino - fim;
             destino = fim - excesso;
-            if (destino < 1) destino = 1;
+            if (destino < 1){
+                destino = 1;
+            }
             movimentoValido = false;  // <-- aqui está a regra que faltava
         }
 
