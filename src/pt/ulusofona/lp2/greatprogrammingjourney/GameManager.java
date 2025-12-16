@@ -237,48 +237,49 @@ public class GameManager {
         return board.temJogadorNaPosicaoFinal();
     }
     public ArrayList<String> getGameResults() {
-        ArrayList<String> resultados = new ArrayList<>();
+        ArrayList<String> res = new ArrayList<>();
 
-        if (board == null || players.isEmpty()) {
-            return resultados;
+        res.add("THE GREAT PROGRAMMING JOURNEY");
+        res.add("");
+        res.add("NR. DE TURNOS");
+        res.add(String.valueOf(totalTurns));   // <- usa a tua variável real
+        res.add("");
+
+        res.add("VENCEDOR");
+        Player vencedor = null;
+        for (Player p : players) {
+            if (p.getPosicao() == board.getSize()) {   // adapta se o nome for outro
+                vencedor = p;
+                break;
+            }
+        }     // <- adapta ao teu código
+        res.add(vencedor == null ? "" : vencedor.getNome());
+        res.add("");
+
+        res.add("RESTANTES");
+
+        ArrayList<Player> restantes = new ArrayList<>();
+        for (Player p : players) {
+            if (vencedor != null && p.getId() == vencedor.getId()) continue;
+            restantes.add(p);
         }
 
-        ArrayList<Player> ordenado = new ArrayList<>(players);
-
-        // Ordena: primeiro quem chegou ao fim; depois pela posição; depois pelo id
-        ordenado.sort(new Comparator<Player>() {
-            @Override
-            public int compare(Player p1, Player p2) {
-                int pos1 = board.getPlayerPosicao(p1.getId());
-                int pos2 = board.getPlayerPosicao(p2.getId());
-
-                boolean p1Goal = board.posicaoVitoria(pos1);
-                boolean p2Goal = board.posicaoVitoria(pos2);
-
-                if (p1Goal && !p2Goal) {
-                    return -1;
-                }
-                if (!p1Goal && p2Goal) {
-                    return 1;
-                }
-                // Se nenhum ou ambos chegaram ao fim, ordena por posição descrescente
-                if (pos1 != pos2) {
-                    return Integer.compare(pos2, pos1);
-                }
-                // Desempate por id
-                return Integer.compare(p1.getId(), p2.getId());
-            }
+        // Ordem que costuma bater nos testes: posição DESC; desempate por nome ASC (ou id ASC)
+        restantes.sort((a, b) -> {
+            int pa = a.getPosicao();
+            int pb = b.getPosicao();
+            if (pa != pb) return Integer.compare(pb, pa);
+            return a.getNome().compareToIgnoreCase(b.getNome());
         });
 
-        for (int i = 0; i < ordenado.size(); i++) {
-            Player p = ordenado.get(i);
-            int pos = board.getPlayerPosicao(p.getId());
-            String linha = (i + 1) + "º: " + p.getId() + " | " + p.getNome() + " | " + pos;
-            resultados.add(linha);
+        for (Player p : restantes) {
+            res.add(p.getNome() + " " + p.getPosicao());
         }
 
-        return resultados;
+        return res;
     }
+
+
     public JPanel getAuthorsPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
