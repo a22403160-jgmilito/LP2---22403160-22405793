@@ -951,5 +951,5 @@ public class GameManager {
                 + ", todos recuaram 3 casas.";
     }
 
-
+//fez certo
 }
