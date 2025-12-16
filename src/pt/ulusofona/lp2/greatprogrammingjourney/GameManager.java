@@ -138,57 +138,47 @@ public class GameManager {
             return false;
         }
 
-        // 1) Validar intervalo do dado
+        // 1) nrSpaces fora [1..6]
         if (nrSpaces < 1 || nrSpaces > 6) {
             return false;
         }
 
         Player atual = players.get(currentPlayerIndex);
 
-        if (!atual.isAlive()) {
+        // 2) Jogador não está "Em Jogo" (Derrotado ou Preso) => movimento inválido
+        if (!atual.isAlive() || !atual.isEnabled()) {
             return false;
         }
 
-        // Se estiver preso (Ciclo Infinito), não joga, mas moveCurrentPlayer não deve falhar
-        if (!atual.isEnabled()) {
-            valorDadoLancado = nrSpaces;
-            return true;
-        }
-
-
-        // 3) Regra por linguagem inicial (ORDEM ORIGINAL)
+        // 3) Restrições por linguagem (como já tinhas)
         String primeiraLing = getPrimeiraLinguagem(atual);
 
-        if ("Assembly".equalsIgnoreCase(primeiraLing)) {
-            if (nrSpaces > 2) {
-                return false;
-            }
-        } else if ("C".equalsIgnoreCase(primeiraLing)) {
-            if (nrSpaces > 3) {
-                return false;
-            }
+        if ("Assembly".equalsIgnoreCase(primeiraLing) && nrSpaces >= 3) {
+            return false;
+        }
+        if ("C".equalsIgnoreCase(primeiraLing) && nrSpaces >= 4) {
+            return false;
         }
 
-        // Guardar o valor do dado (usado por Erro de Lógica)
+        // Guardar valor do dado
         valorDadoLancado = nrSpaces;
 
-        // 4) Posição atual e REGISTO NO HISTÓRICO (antes de mover)
         int posAtual = board.getPlayerPosicao(atual.getId());
-        atual.registarPosicao(posAtual);   // importante para o Código Duplicado
+        atual.registarPosicao(posAtual);
 
         int fim = board.getSize();
-
         int destino = posAtual + nrSpaces;
 
+        boolean movimentoValido = true;
+
+        // 6) Se ultrapassa a meta: ajusta posição mas movimento é inválido
         if (destino > fim) {
             int excesso = destino - fim;
             destino = fim - excesso;
-            if (destino < 1) {
-                destino = 1;
-            }
+            if (destino < 1) destino = 1;
+            movimentoValido = false;  // <-- aqui está a regra que faltava
         }
 
-        // 5) Executar movimento SEM depender de delta grande negativo/positivo
         while (posAtual < destino) {
             board.movePlayer(atual.getId(), 1);
             posAtual++;
@@ -198,11 +188,11 @@ public class GameManager {
             posAtual--;
         }
 
-        // 6) REGISTO NO HISTÓRICO (depois de mover)
-        atual.registarPosicao(posAtual);   // posAtual agora é o destino
+        atual.registarPosicao(posAtual);
 
-        return true;
+        return movimentoValido;
     }
+
 
 
     private String getPrimeiraLinguagem(Player p) {
@@ -260,7 +250,9 @@ public class GameManager {
 
         ArrayList<Player> restantes = new ArrayList<>();
         for (Player p : players) {
-            if (vencedor != null && p.getId() == vencedor.getId()) continue;
+            if (vencedor != null && p.getId() == vencedor.getId()){
+                continue;
+            }
             restantes.add(p);
         }
 
@@ -268,7 +260,9 @@ public class GameManager {
         restantes.sort((a, b) -> {
             int pa = a.getPosicao();
             int pb = b.getPosicao();
-            if (pa != pb) return Integer.compare(pb, pa);
+            if (pa != pb){
+                return Integer.compare(pb, pa);
+            }
             return a.getNome().compareToIgnoreCase(b.getNome());
         });
 
