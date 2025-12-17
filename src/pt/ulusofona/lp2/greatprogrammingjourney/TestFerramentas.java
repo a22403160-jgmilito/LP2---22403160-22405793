@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class FerramentasTest {
+class TestFerramentas {
 
     @Test
     void nomesEIds_basicos() {

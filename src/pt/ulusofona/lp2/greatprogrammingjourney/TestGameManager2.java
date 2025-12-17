@@ -1,14 +1,12 @@
 package pt.ulusofona.lp2.greatprogrammingjourney;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class GameManagerTest {
+class TestGameManager2 {
 
     private static String[][] twoPlayers(String lang1, String lang2) {
         return new String[][]{
