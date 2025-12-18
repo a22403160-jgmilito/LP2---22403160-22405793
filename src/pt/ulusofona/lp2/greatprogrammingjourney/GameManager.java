@@ -9,27 +9,70 @@ import java.util.HashMap;
 import java.util.List;
 
 
+/**
+ * GameManager:
+ * Classe “central” do jogo. É responsável por:
+ * - Guardar jogadores e tabuleiro
+ * - Controlar turnos, jogador atual, vencedor
+ * - Criar/gerir abismos e ferramentas (parte 2)
+ * - Implementar movimento, reações a abismos/ferramentas
+ * - Guardar e carregar jogo (save/load)
+ * - Expor informação para a GUI (slot info, imagens, autores, etc.)
+ */
 public class GameManager {
 
+    // Lista de jogadores (2 a 4, conforme validação)
     private final ArrayList<Player> players = new ArrayList<>();
+
+    // Tabuleiro do jogo (assume-se que Board guarda posições e permite mover jogadores)
     private Board board;
 
-    // Estado do jogo
+    // ----------------------------
+    // Estado do jogo (progresso)
+    // ----------------------------
+
+    // Contador de turnos (incrementado em reactToAbyssOrTool)
     private int totalTurns = 0;
+
+    // Id do vencedor (null enquanto ninguém ganhar)
     private Integer winnerId = null;
+
+    // Índice do jogador atual dentro de "players"
     private int currentPlayerIndex = 0;
 
-    // parte 2
-    private Abismos[] abismosNaPosicao;        // índice = posição no tabuleiro
+    // ----------------------------
+    // Parte 2: abismos e ferramentas
+    // ----------------------------
+
+    // Array indexado por posição: se abismosNaPosicao[pos] != null, há abismo nessa casa
+    private Abismos[] abismosNaPosicao;
+
+    // Array indexado por posição: se ferramentasNaPosicao[pos] != null, há ferramenta nessa casa
     private Ferramentas[] ferramentasNaPosicao;
+
+    // Guarda o valor do dado lançado no turno (necessário para certos efeitos)
     private int valorDadoLancado = 0;
+
+    // Guarda a última configuração recebida de abismos/ferramentas
+    // (útil para recriar o tabuleiro mantendo esse input)
     private String[][] lastAbyssesAndTools = null;
+
+    // Marca se a casa já teve uma ferramenta (mesmo que já tenha sido apanhada).
+    // Isto é importante para decidir se reactToAbyssOrTool deve devolver "" ou null.
     private boolean[] casaTeveFerramenta;
 
 
+    /**
+     * Construtor vazio. O jogo só fica “pronto” após createInitialBoard().
+     */
     public GameManager() {
     }
 
+    /**
+     * Procura um Player pelo id dentro da lista de jogadores.
+     * @param id id do jogador
+     * @return Player correspondente ou null se não existir
+     */
     private Player getPlayerById(int id) {
         for (Player p : players) {
             if (p.getId() == id) {
@@ -38,22 +81,49 @@ public class GameManager {
         }
         return null;
     }
+
+    /**
+     * Overload de criação do tabuleiro:
+     * se não for fornecida a matriz de abismos/ferramentas,
+     * usa a última conhecida (lastAbyssesAndTools).
+     */
     public boolean createInitialBoard(String[][] playerInfo, int worldSize) {
         return createInitialBoard(playerInfo, worldSize, lastAbyssesAndTools);
     }
+
+    /**
+     * Devolve o nome do PNG associado a uma casa (para a GUI).
+     * Neste momento só devolve a imagem final "glory.png" na casa de vitória.
+     *
+     * @param nrSquare número da casa no tabuleiro
+     * @return nome do ficheiro png ou null
+     */
     public String getImagePng(int nrSquare) {
+        // Se não há tabuleiro, não há imagens
         if (board == null) {
             return null;
         }
+
+        // Se a posição é inválida, não há imagens
         if (!board.posicaoValida(nrSquare)) {
             return null;
         }
-        // Casa final
+
+        // Casa final: imagem de vitória
         if (board.posicaoVitoria(nrSquare)) {
             return "glory.png";
         }
+
+        // Sem outras imagens definidas
         return null;
     }
+
+    /**
+     * Informação resumida de todos os jogadores (para GUI).
+     * Formato: "Nome : Ferramentas | Nome : Ferramentas | ..."
+     *
+     * @return string com info ou "" se jogo ainda não pronto
+     */
     public String getProgrammersInfo() {
         if (board == null || players.isEmpty()) {
             return "";
@@ -76,16 +146,39 @@ public class GameManager {
         return sb.toString();
     }
 
-    //alterar essa funcao para chamar o to string do player e nao repetir cogigo
+    /**
+     * Versão “string formatada” da informação do programador.
+     *
+     * NOTA: tens aqui um comentário a sugerir melhoria:
+     * "alterar essa funcao para chamar o toString do player e nao repetir codigo"
+     *
+     * @param id id do jogador
+     * @return string formatada ou null
+     */
     public String getProgrammerInfoAsStr(int id) {
         String[] info = getProgrammerInfo(id);
         if (info == null) {
             return null;
         }
 
-        // id | nome | posicao | ferramentas | linguagens | estado
+        // Formato pedido: id | nome | posicao | ferramentas | linguagens | estado
+        // Atenção ao mapeamento dos índices:
+        // [0] id, [1] nome, [4] posicao, [5] ferramentas, [2] linguagens, [6] estado
         return info[0] + " | " + info[1] + " | " + info[4] + " | " + info[5] + " | " + info[2] + " | " + info[6];
     }
+
+    /**
+     * Informação sobre uma casa do tabuleiro (slot).
+     * Devolve SEMPRE um array de 3 strings se a posição for válida:
+     * [0] ids dos jogadores (se existirem) separados por vírgula
+     * [1] nome do abismo/ferramenta (se existir)
+     * [2] "A:id" ou "T:id" (identificador de abismo/ferramenta)
+     *
+     * Prioridade: se houver abismo e ferramenta, o abismo “ganha” (aparece o abismo).
+     *
+     * @param position posição no tabuleiro (1..board.getSize())
+     * @return array de 3 strings ou null se posição inválida
+     */
     public String[] getSlotInfo(int position) {
 
         // validação da posição
@@ -125,14 +218,32 @@ public class GameManager {
         return res;
     }
 
-
-
+    /**
+     * Devolve o id do jogador atual (é o jogador na vez).
+     * @return id do jogador atual ou -1 se não há jogadores
+     */
     public int getCurrentPlayerID() {
         if (players.isEmpty()) {
             return -1;
         }
         return players.get(currentPlayerIndex).getId();
     }
+
+    /**
+     * Move o jogador atual nrSpaces casas.
+     * Regras implementadas:
+     * 1) nrSpaces tem de estar no intervalo [1..6]
+     * 2) jogador tem de estar vivo e habilitado (não derrotado nem preso)
+     * 3) restrições por linguagem:
+     *    - Assembly: não pode lançar >=3
+     *    - C: não pode lançar >=4
+     * 4) Se ultrapassa a meta, “recua” pelo excesso e o movimento é inválido
+     *
+     * NOTA: O efeito de abismo/ferramenta não é aplicado aqui; isso acontece em reactToAbyssOrTool().
+     *
+     * @param nrSpaces valor do “dado”
+     * @return true se o movimento foi considerado válido; false se inválido (ou proibido)
+     */
     public boolean moveCurrentPlayer(int nrSpaces) {
         if (players.isEmpty() || board == null) {
             return false;
@@ -150,7 +261,7 @@ public class GameManager {
             return false;
         }
 
-        // 3) Restrições por linguagem (como já tinhas)
+        // 3) Restrições por linguagem
         String primeiraLing = getPrimeiraLinguagem(atual);
 
         if ("Assembly".equalsIgnoreCase(primeiraLing) && nrSpaces >= 3) {
@@ -160,9 +271,10 @@ public class GameManager {
             return false;
         }
 
-        // Guardar valor do dado
+        // Guardar valor do dado (pode ser usado em efeitos de abismos)
         valorDadoLancado = nrSpaces;
 
+        // Guardar posição antes de mexer (histórico)
         int posAtual = board.getPlayerPosicao(atual.getId());
         atual.registarPosicao(posAtual);
 
@@ -178,25 +290,33 @@ public class GameManager {
             if (destino < 1){
                 destino = 1;
             }
-            movimentoValido = false;  // <-- aqui está a regra que faltava
+            movimentoValido = false;
         }
 
+        // Move “passo a passo” para a direita (1 em 1)
         while (posAtual < destino) {
             board.movePlayer(atual.getId(), 1);
             posAtual++;
         }
+
+        // Move “passo a passo” para a esquerda (1 em 1)
         while (posAtual > destino) {
             board.movePlayer(atual.getId(), -1);
             posAtual--;
         }
 
+        // Regista posição final
         atual.registarPosicao(posAtual);
 
         return movimentoValido;
     }
 
-
-
+    /**
+     * Obtém a “primeira linguagem” do jogador, a partir da string original,
+     * assumindo separação por ';' (ex: "Java;Python;C").
+     * @param p jogador
+     * @return primeira linguagem (trim) ou "" se não existir
+     */
     private String getPrimeiraLinguagem(Player p) {
         if (p == null) {
             return "";
@@ -216,8 +336,12 @@ public class GameManager {
         return partes[0].trim();
     }
 
-
-
+    /**
+     * Indica se o jogo acabou.
+     * Critérios:
+     * - Se winnerId já foi definido, acabou.
+     * - Ou se o Board indica que há alguém na posição final.
+     */
     public boolean gameIsOver() {
         if (board == null) {
             return false;
@@ -225,31 +349,44 @@ public class GameManager {
         if (winnerId != null) {
             return true;
         }
-        // Ou qualquer jogador na posição final
         return board.temJogadorNaPosicaoFinal();
     }
+
+    /**
+     * Devolve os resultados do jogo num ArrayList de strings,
+     * provavelmente conforme formato esperado por testes.
+     *
+     * Estrutura:
+     * - Título
+     * - nr de turnos
+     * - vencedor
+     * - restantes ordenados (posição desc, desempate por nome asc)
+     */
     public ArrayList<String> getGameResults() {
         ArrayList<String> res = new ArrayList<>();
 
         res.add("THE GREAT PROGRAMMING JOURNEY");
         res.add("");
         res.add("NR. DE TURNOS");
-        res.add(String.valueOf(totalTurns));   // <- usa a tua variável real
+        res.add(String.valueOf(totalTurns));
         res.add("");
 
         res.add("VENCEDOR");
+
+        // Procura vencedor: quem estiver na última casa
         Player vencedor = null;
         for (Player p : players) {
-            if (p.getPosicao() == board.getSize()) {   // adapta se o nome for outro
+            if (p.getPosicao() == board.getSize()) {
                 vencedor = p;
                 break;
             }
-        }     // <- adapta ao teu código
+        }
         res.add(vencedor == null ? "" : vencedor.getNome());
         res.add("");
 
         res.add("RESTANTES");
 
+        // Lista “restantes” sem o vencedor
         ArrayList<Player> restantes = new ArrayList<>();
         for (Player p : players) {
             if (vencedor != null && p.getId() == vencedor.getId()){
@@ -258,7 +395,7 @@ public class GameManager {
             restantes.add(p);
         }
 
-        // Ordem que costuma bater nos testes: posição DESC; desempate por nome ASC (ou id ASC)
+        // Ordenação: posição DESC, depois nome ASC (case-insensitive)
         restantes.sort((a, b) -> {
             int pa = a.getPosicao();
             int pb = b.getPosicao();
@@ -268,6 +405,7 @@ public class GameManager {
             return a.getNome().compareToIgnoreCase(b.getNome());
         });
 
+        // Formato por linha: "Nome posicao"
         for (Player p : restantes) {
             res.add(p.getNome() + " " + p.getPosicao());
         }
@@ -275,7 +413,10 @@ public class GameManager {
         return res;
     }
 
-
+    /**
+     * Painel com autores (GUI).
+     * Atualmente tem placeholders.
+     */
     public JPanel getAuthorsPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -295,18 +436,27 @@ public class GameManager {
 
         return panel;
     }
+
+    /**
+     * Permite fornecer configurações extra para a GUI (se o enunciado pedir).
+     * Aqui só devolve um título.
+     */
     public HashMap<String, String> customizeBoard() {
         HashMap<String, String> config = new HashMap<>();
 
-        // Aqui podes configurar coisas que a GUI possa usar, conforme o enunciado.
-        // Como não temos o enunciado completo, deixo algo simples:
-        // (Se o professor tiver indicado chaves específicas, mete-as aqui.)
+        // Chaves dependem do enunciado/GUI.
         config.put("title", "Great Programming Journey");
-        // Exemplo: cores, imagens, etc. (se a GUI usar)
-        // config.put("board-color", "#FFFFFF");
 
         return config;
     }
+
+    /**
+     * Devolve informação detalhada sobre um programador num array de 7 strings:
+     * [0] id, [1] nome, [2] linguagens, [3] cor, [4] posição, [5] ferramentas, [6] estado
+     *
+     * @param id id do jogador
+     * @return array de 7 strings ou null se jogo/jogador inválido
+     */
     public String[] getProgrammerInfo(int id) {
         if (players.isEmpty() || board == null) {
             return null;
@@ -317,9 +467,10 @@ public class GameManager {
             return null;
         }
 
+        // Posição real obtida do Board
         int pos = board.getPlayerPosicao(id);
 
-        // Linguagens na ORDEM ORIGINAL (não usar normalizadas aqui)
+        // Linguagens (atenção ao método usado; aqui está a chamar normalizadas)
         String linguagens = p.getLinguagensNormalizadas();
         if (linguagens == null) {
             linguagens = "";
@@ -327,10 +478,10 @@ public class GameManager {
 
         String cor = p.getCor() == null ? "" : p.getCor();
 
-
-        // Ferramentas ORDENADAS
+        // Ferramentas ordenadas (responsabilidade do Player)
         String ferramentas = p.getFerramentasAsString();
 
+        // Estado textual (ex: "Em Jogo", "Preso", "Derrotado" - depende do Player)
         String estado = p.getEstadoComoTexto();
 
         return new String[]{
@@ -344,8 +495,30 @@ public class GameManager {
         };
     }
 
-    //part 2
+    // =========================================================
+    // PARTE 2: criação do tabuleiro com abismos e ferramentas
+    // =========================================================
+
+    /**
+     * Cria o tabuleiro inicial a partir dos dados de jogadores e configurações.
+     *
+     * Validações principais:
+     * - playerInfo não pode ser null/vazio
+     * - cada linha de playerInfo tem pelo menos 4 campos: id, nome, linguagens, cor
+     * - número de jogadores: 2..4
+     * - worldSize >= 2 * nº jogadores
+     * - abyssesAndTools (se existir) tem linhas [tipoLinha, tipoId, pos]
+     *   tipoLinha: 0=abismo, 1=ferramenta
+     *   pos tem de ser válida
+     *   não pode haver repetição no mesmo array (duas ferramentas na mesma casa, etc.)
+     *
+     * Também inicializa:
+     * - currentPlayerIndex = 0
+     * - totalTurns = 1
+     * - winnerId = null
+     */
     public boolean createInitialBoard(String[][] playerInfo, int worldSize, String[][] abyssesAndTools) {
+        // Guarda a configuração para poder reusar depois
         lastAbyssesAndTools = abyssesAndTools;
 
         if (playerInfo == null || playerInfo.length == 0) {
@@ -354,6 +527,7 @@ public class GameManager {
 
         players.clear();
 
+        // Criar jogadores a partir de playerInfo
         for (String[] info : playerInfo) {
             if (info == null || info.length < 4) {
                 return false; // dado de jogador mal formado
@@ -369,6 +543,7 @@ public class GameManager {
             String nome = info[1];
             String linguagens = info[2];
             String cor = info[3];
+
             players.add(new Player(id, nome, linguagens, cor));
         }
 
@@ -376,6 +551,7 @@ public class GameManager {
             return false;
         }
 
+        // Regra: mínimo 2, máximo 4
         if (players.size() < 2 || players.size() > 4) {
             players.clear();
             board = null;
@@ -384,6 +560,7 @@ public class GameManager {
             return false;
         }
 
+        // Regra: worldSize >= 2 * nº jogadores
         int tamanhoMinimo = 2 * players.size();
         if (worldSize < tamanhoMinimo) {
             players.clear();
@@ -393,19 +570,25 @@ public class GameManager {
             return false;
         }
 
+        // Criar tabuleiro e estruturas auxiliares
         board = new Board(worldSize, players);
+
+        // +1 porque as posições são (muito provavelmente) 1..worldSize
         abismosNaPosicao = new Abismos[worldSize + 1];
         ferramentasNaPosicao = new Ferramentas[worldSize + 1];
         casaTeveFerramenta = new boolean[worldSize + 1];
 
+        // Processar lista de abismos e ferramentas
         if (abyssesAndTools != null) {
             for (String[] linha : abyssesAndTools) {
                 if (linha == null || linha.length < 3) {
                     return false;
                 }
-                int tipoLinha;
-                int tipoId;
-                int pos;
+
+                int tipoLinha; // 0=abismo, 1=ferramenta
+                int tipoId;    // id do abismo/ferramenta
+                int pos;       // posição onde colocar
+
                 try {
                     tipoLinha = Integer.parseInt(linha[0]);
                     tipoId = Integer.parseInt(linha[1]);
@@ -413,42 +596,61 @@ public class GameManager {
                 } catch (NumberFormatException e) {
                     return false;
                 }
-                // posição tem de ser válida
+
+                // posição tem de ser válida no tabuleiro
                 if (!board.posicaoValida(pos)) {
                     return false;
                 }
+
                 if (tipoLinha == 0) {
                     // ABISMO
                     if (abismosNaPosicao[pos] != null) {
-                        return false;
+                        return false; // já existe abismo nessa casa
                     }
+
                     Abismos ab = criarAbismoPorId(tipoId);
                     if (ab == null) {
-                        return false;
+                        return false; // id inválido
                     }
+
                     abismosNaPosicao[pos] = ab;
+
                 } else if (tipoLinha == 1) {
                     // FERRAMENTA
                     if (ferramentasNaPosicao[pos] != null) {
-                        return false;
+                        return false; // já existe ferramenta nessa casa
                     }
+
                     Ferramentas f = criarFerramentaPorId(tipoId);
                     if (f == null) {
-                        return false;
+                        return false; // id inválido
                     }
+
                     ferramentasNaPosicao[pos] = f;
+
+                    // marca que esta casa já teve ferramenta (para a regra de retorno em reactToAbyssOrTool)
                     casaTeveFerramenta[pos] = true;
+
                 } else {
+                    // tipoLinha só pode ser 0 ou 1
                     return false;
                 }
             }
         }
+
+        // Estado inicial do jogo
         currentPlayerIndex = 0;
         totalTurns = 1;
         winnerId = null;
+
         return true;
     }
 
+    /**
+     * Factory: cria instância de Abismo a partir do id.
+     * @param id id do abismo
+     * @return Abismos ou null se id inválido
+     */
     private Abismos criarAbismoPorId(int id) {
         switch (id) {
             case 0: return new ErroDeSintaxe();
@@ -465,6 +667,12 @@ public class GameManager {
                 return null;
         }
     }
+
+    /**
+     * Factory: cria instância de Ferramenta a partir do id.
+     * @param id id da ferramenta
+     * @return Ferramentas ou null se id inválido
+     */
     private Ferramentas criarFerramentaPorId(int id) {
         switch (id) {
             case 0: return new Heranca();
@@ -477,6 +685,29 @@ public class GameManager {
                 return null;
         }
     }
+
+    // =========================================================
+    // Reação a abismos/ferramentas após movimento
+    // =========================================================
+
+    /**
+     * Aplica o que existir na casa onde o jogador atual caiu:
+     * - Se houver abismo, tem prioridade sobre ferramenta.
+     * - Se houver ferramenta e o jogador não tiver uma igual, apanha (mas a ferramenta permanece no tabuleiro).
+     * - Trata casos especiais:
+     *   * Ciclo Infinito (id 8): “troca” preso
+     *   * Segmentation Fault (id 9): efeito coletivo se houver >=2 jogadores
+     *
+     * Regras de retorno:
+     * - Se não houve nada relevante, devolve:
+     *     null -> se a casa não é “especial”
+     *     ""   -> se a casa é “especial” (abismo/ferramenta/teve-ferramenta)
+     * - Se houve uma mensagem de evento, devolve a mensagem.
+     *
+     * Também:
+     * - verifica vitória e define winnerId
+     * - avança turno (currentPlayerIndex) e incrementa totalTurns
+     */
     public String reactToAbyssOrTool() {
         if (board == null || players.isEmpty()) {
             return null;
@@ -488,6 +719,7 @@ public class GameManager {
 
         StringBuilder mensagem = new StringBuilder();
 
+        // casaEspecial = tem abismo OU tem ferramenta OU já teve ferramenta antes
         boolean casaEspecial =
                 (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length && abismosNaPosicao[pos] != null)
                         || (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length && ferramentasNaPosicao[pos] != null)
@@ -501,25 +733,27 @@ public class GameManager {
 
         if (abismo != null) {
 
-            // --- Ciclo Infinito (id 8): troca de preso ---
+            // --- Caso especial: Ciclo Infinito (id 8) ---
             if (abismo.getId() == 8) {
                 String msg = aplicarCicloInfinito(atual, pos);
                 if (msg != null && !msg.isEmpty()) {
                     mensagem.append(msg);
                 }
             }
-            // --- Segmentation Fault (id 9): efeito coletivo ---
+            // --- Caso especial: Segmentation Fault (id 9) ---
             else if (abismo.getId() == 9) {
                 String msg = aplicarSegmentationFault(pos);
                 if (msg != null && !msg.isEmpty()) {
                     mensagem.append(msg);
                 }
             }
-            // --- Abismos normais ---
+            // --- Abismos “normais” ---
             else {
+                // Verifica se o jogador tem uma ferramenta que anula este abismo
                 Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
 
                 if (anuladora != null) {
+                    // Consome a ferramenta para anular o abismo
                     atual.removeFerramenta(anuladora);
 
                     mensagem.append("O programador ")
@@ -530,6 +764,7 @@ public class GameManager {
                             .append(abismo.getNome())
                             .append(".");
                 } else {
+                    // Sem proteção: aplicar o efeito do abismo
                     String msgAbismo = abismo.aplicarEfeito(atual, board, valorDadoLancado);
                     if (msgAbismo != null && !msgAbismo.isEmpty()) {
                         mensagem.append(msgAbismo);
@@ -545,6 +780,7 @@ public class GameManager {
             }
 
             if (ferramenta != null) {
+                // Evita duplicar ferramentas iguais no inventário
                 if (!atual.temFerramentaComId(ferramenta.getId())) {
                     atual.adicionarFerramenta(ferramenta);
 
@@ -554,11 +790,11 @@ public class GameManager {
                             .append(ferramenta.getNome())
                             .append(".");
                 }
-                // ferramenta permanece no tabuleiro
+                // ferramenta permanece no tabuleiro (não removes do array)
             }
         }
 
-        // 3) Vitória
+        // 3) Vitória: se chegou à casa final, marca winnerId (se ainda não havia)
         int novaPos = board.getPlayerPosicao(idJogador);
         if (board.posicaoVitoria(novaPos) && winnerId == null) {
             winnerId = idJogador;
@@ -568,6 +804,9 @@ public class GameManager {
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         totalTurns++;
 
+        // Se não houve mensagem:
+        // - se casa especial: devolve "" (string vazia)
+        // - se não: devolve null
         if (mensagem.length() == 0) {
             return casaEspecial ? "" : null;
         }
@@ -575,8 +814,24 @@ public class GameManager {
         return mensagem.toString();
     }
 
+    // =========================================================
+    // SAVE GAME
+    // =========================================================
 
-
+    /**
+     * Guarda o estado do jogo num ficheiro (formato “;”).
+     * Estrutura:
+     * WORLD;worldSize;totalTurns;currentPlayerIndex;winnerIdOu-1
+     * PLAYERS;n
+     * PLAYER;id;nome;linguagens;cor;pos
+     * ABYSSES;n
+     * ABYSS;abyssId;pos
+     * TOOLS;n
+     * TOOL;toolId;pos
+     *
+     * @param file ficheiro destino
+     * @return true se guardou com sucesso; false caso contrário
+     */
     public boolean saveGame(File file) {
         if (board == null || players.isEmpty() || file == null) {
             return false;
@@ -593,7 +848,8 @@ public class GameManager {
             // 2) Número de jogadores
             bw.write("PLAYERS;" + players.size());
             bw.newLine();
-            // 3) Cada jogador
+
+            // 3) Cada jogador com posição atual
             for (Player p : players) {
                 int pos = board.getPlayerPosicao(p.getId());
 
@@ -604,7 +860,8 @@ public class GameManager {
                 bw.write("PLAYER;" + p.getId() + ";" + nome + ";" + linguagens + ";" + cor + ";" + pos);
                 bw.newLine();
             }
-            // 4) Abismos
+
+            // 4) Abismos: contar quantos existem
             int nAbismos = 0;
             if (abismosNaPosicao != null) {
                 for (int i = 1; i < abismosNaPosicao.length; i++) {
@@ -616,6 +873,7 @@ public class GameManager {
             bw.write("ABYSSES;" + nAbismos);
             bw.newLine();
 
+            // Escrever cada abismo
             if (abismosNaPosicao != null) {
                 for (int i = 1; i < abismosNaPosicao.length; i++) {
                     if (abismosNaPosicao[i] != null) {
@@ -624,7 +882,8 @@ public class GameManager {
                     }
                 }
             }
-            // 5) Ferramentas
+
+            // 5) Ferramentas: contar quantas existem
             int nTools = 0;
             if (ferramentasNaPosicao != null) {
                 for (int i = 1; i < ferramentasNaPosicao.length; i++) {
@@ -636,6 +895,7 @@ public class GameManager {
             bw.write("TOOLS;" + nTools);
             bw.newLine();
 
+            // Escrever cada ferramenta
             if (ferramentasNaPosicao != null) {
                 for (int i = 1; i < ferramentasNaPosicao.length; i++) {
                     if (ferramentasNaPosicao[i] != null) {
@@ -644,13 +904,27 @@ public class GameManager {
                     }
                 }
             }
+
             return true;
+
         } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
     }
 
+    // =========================================================
+    // LOAD GAME
+    // =========================================================
+
+    /**
+     * Carrega o jogo a partir de um ficheiro no formato esperado pelo saveGame().
+     * Pode lançar:
+     * - FileNotFoundException: se o ficheiro não existir
+     * - InvalidFileException: se o formato/conteúdo for inválido
+     *
+     * @param file ficheiro origem
+     */
     public void loadGame(File file) throws InvalidFileException, java.io.FileNotFoundException {
         if (file == null || !file.exists()) {
             throw new java.io.FileNotFoundException("Ficheiro não encontrado: " + file);
@@ -661,23 +935,29 @@ public class GameManager {
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 
+            // Lê linha WORLD e extrai worldSize/turnos/index/winner
             int[] w = readWorldLine(br);
             int worldSize = w[0];
             int loadedTotalTurns = w[1];
             int loadedCurrentPlayerIndex = w[2];
             int winnerRaw = w[3];
 
+            // Lê bloco PLAYERS + PLAYERs
             readPlayersBlock(br, worldSize, loadedPlayers, loadedPositions);
 
+            // Valida o índice do jogador atual
             if (loadedCurrentPlayerIndex < 0 || loadedCurrentPlayerIndex >= loadedPlayers.size()) {
                 throw new InvalidFileException("Índice de jogador atual inválido: " + loadedCurrentPlayerIndex);
             }
 
+            // Aplica base carregada (board + arrays + posições)
             applyLoadedBase(worldSize, loadedPlayers, loadedPositions);
 
+            // Lê blocos ABYSSES e TOOLS
             readAbyssesBlock(br, worldSize);
             readToolsBlock(br, worldSize);
 
+            // Atualiza estado do jogo
             totalTurns = loadedTotalTurns;
             currentPlayerIndex = loadedCurrentPlayerIndex;
             winnerId = (winnerRaw < 0) ? null : winnerRaw;
@@ -687,7 +967,13 @@ public class GameManager {
         }
     }
 
+    // =========================================================
+    // Funções auxiliares do LOAD (parsing e validação)
+    // =========================================================
 
+    /**
+     * Faz parse de um int ou lança InvalidFileException com mensagem.
+     */
     private int parseIntOrThrow(String s, String erro) throws InvalidFileException {
         try {
             return Integer.parseInt(s);
@@ -696,6 +982,9 @@ public class GameManager {
         }
     }
 
+    /**
+     * Faz split por ';' ou lança InvalidFileException se a linha for null.
+     */
     private String[] splitOrThrow(String line, String erro) throws InvalidFileException {
         if (line == null) {
             throw new InvalidFileException(erro);
@@ -703,6 +992,11 @@ public class GameManager {
         return line.split(";");
     }
 
+    /**
+     * Lê e valida a linha WORLD:
+     * WORLD;worldSize;totalTurns;currentPlayerIndex;winner
+     * @return array [worldSize, totalTurns, currentIndex, winnerRaw]
+     */
     private int[] readWorldLine(BufferedReader br) throws IOException, InvalidFileException {
         String line = br.readLine();
         String[] p = splitOrThrow(line, "Ficheiro vazio.");
@@ -719,9 +1013,17 @@ public class GameManager {
         if (worldSize <= 0) {
             throw new InvalidFileException("Tamanho do tabuleiro inválido: " + worldSize);
         }
+
         return new int[]{worldSize, totalTurns, currentIndex, winnerRaw};
     }
 
+    /**
+     * Lê bloco de jogadores:
+     * PLAYERS;n
+     * PLAYER;id;nome;linguagens;cor;pos
+     * ...
+     * @param worldSize para validar posições
+     */
     private void readPlayersBlock(BufferedReader br, int worldSize,
                                   ArrayList<Player> loadedPlayers,
                                   ArrayList<Integer> loadedPositions) throws IOException, InvalidFileException {
@@ -761,6 +1063,13 @@ public class GameManager {
         }
     }
 
+    /**
+     * Aplica “base” carregada:
+     * - substitui players
+     * - cria board
+     * - cria arrays de abismos/ferramentas/flags
+     * - posiciona jogadores no board
+     */
     private void applyLoadedBase(int worldSize,
                                  ArrayList<Player> loadedPlayers,
                                  ArrayList<Integer> loadedPositions) {
@@ -774,6 +1083,8 @@ public class GameManager {
         ferramentasNaPosicao = new Ferramentas[worldSize + 1];
         casaTeveFerramenta = new boolean[worldSize + 1];
 
+        // Coloca cada jogador na posição carregada:
+        // Assume-se que Board inicia na posição 1, então delta = pos - 1
         for (int i = 0; i < players.size(); i++) {
             Player p = players.get(i);
             int pos = loadedPositions.get(i);
@@ -784,6 +1095,10 @@ public class GameManager {
         }
     }
 
+    /**
+     * Lê bloco ABYSSES; n e depois n linhas ABYSS;id;pos.
+     * Se não houver bloco (EOF), retorna sem erro (compatibilidade com ficheiros antigos).
+     */
     private void readAbyssesBlock(BufferedReader br, int worldSize) throws IOException, InvalidFileException {
         String line = br.readLine();
         if (line == null) {
@@ -820,6 +1135,10 @@ public class GameManager {
         }
     }
 
+    /**
+     * Lê bloco TOOLS; n e depois n linhas TOOL;id;pos.
+     * Se não houver bloco (EOF), retorna sem erro.
+     */
     private void readToolsBlock(BufferedReader br, int worldSize) throws IOException, InvalidFileException {
         String line = br.readLine();
         if (line == null) {
@@ -853,10 +1172,23 @@ public class GameManager {
             }
 
             ferramentasNaPosicao[pos] = f;
+
+            // marca que essa casa já “teve ferramenta”
             casaTeveFerramenta[pos] = true;
         }
     }
 
+    // =========================================================
+    // Casos especiais de abismos (Ciclo Infinito / Segmentation Fault)
+    // =========================================================
+
+    /**
+     * Aplica regra do Ciclo Infinito (abismo id 8):
+     * - Se o jogador tiver ferramenta que anula, consome-a e não prende ninguém.
+     * - Caso contrário:
+     *   * liberta UM jogador preso que esteja na mesma casa (se existir)
+     *   * prende o jogador atual (enabled=false)
+     */
     private String aplicarCicloInfinito(Player atual, int pos) {
         // Se tiver ferramenta aplicável, anula (consome) e ninguém fica preso
         Abismos ab = abismosNaPosicao[pos];
@@ -876,6 +1208,7 @@ public class GameManager {
                 if (id != atual.getId()) {
                     Player outro = getPlayerById(id);
                     if (outro != null && outro.isAlive() && !outro.isEnabled()) {
+                        // liberta o outro preso
                         outro.setEnabled(true);
                         break; // só liberta 1 (regra: troca)
                     }
@@ -891,6 +1224,10 @@ public class GameManager {
                 + " e ficou preso até que outro programador caia na mesma casa.";
     }
 
+    /**
+     * Move um jogador por delta casas (positivo ou negativo), respeitando limites 1..size.
+     * Move “passo a passo” usando board.movePlayer(±1) para manter consistência.
+     */
     private void moverJogadorDelta(int playerId, int delta) {
         int posAtual = board.getPlayerPosicao(playerId);
         int destino = posAtual + delta;
@@ -912,9 +1249,18 @@ public class GameManager {
         }
     }
 
+    /**
+     * Aplica regra do Segmentation Fault (abismo id 9):
+     * - Se houver menos de 2 jogadores na casa, não faz nada.
+     * - Se algum jogador na casa tiver ferramenta que anula este abismo:
+     *     consome essa ferramenta e anula para todos.
+     * - Caso contrário:
+     *     todos os jogadores na casa recuam 3 casas.
+     */
     private String aplicarSegmentationFault(int pos) {
         List<Integer> ids = board.getJogadoresNaPosicao(pos);
 
+        // Precisa de “vários programadores” na casa para aplicar o efeito
         if (ids == null || ids.size() < 2) {
             return "";
         }
@@ -924,6 +1270,7 @@ public class GameManager {
         Player jogadorComProtecao = null;
         Ferramentas ferramentaUsada = null;
 
+        // Procura se alguém tem ferramenta de anulação (o primeiro que tiver, anula para todos)
         for (int id : ids) {
             Player p = getPlayerById(id);
             if (p != null) {
@@ -936,6 +1283,7 @@ public class GameManager {
             }
         }
 
+        // Se encontrou proteção, consome e anula o efeito global
         if (jogadorComProtecao != null) {
             jogadorComProtecao.removeFerramenta(ferramentaUsada);
             return "Segmentation Fault! O programador " + jogadorComProtecao.getNome()
@@ -943,6 +1291,7 @@ public class GameManager {
                     + " e o efeito foi anulado para todos os programadores na casa " + pos + ".";
         }
 
+        // Sem proteção: todos recuam 3 casas
         for (int id : ids) {
             moverJogadorDelta(id, -3);
         }
@@ -950,6 +1299,4 @@ public class GameManager {
         return "Segmentation Fault! Como havia vários programadores na casa " + pos
                 + ", todos recuaram 3 casas.";
     }
-
-//fez certo
 }
