@@ -276,36 +276,23 @@ public class GameManager {
 
         valorDadoLancado = nrSpaces;
 
-        // REGISTAR APENAS A POSIÇÃO ANTES DO MOVIMENTO
         int posAtual = board.getPlayerPosicao(atual.getId());
         atual.registarPosicao(posAtual);
 
-        int fim = board.getSize();
-        int destino = posAtual + nrSpaces;
-
         boolean movimentoValido = true;
-
-        if (destino > fim) {
-            int excesso = destino - fim;
-            destino = fim - excesso;
-            if (destino < 1) {
-                destino = 1;
-            }
-            movimentoValido = false;
+        if (posAtual + nrSpaces > board.getSize()) {
+            movimentoValido = false; // passou do fim -> inválido, mas move e faz bounce
         }
 
-        while (posAtual < destino) {
-            board.movePlayer(atual.getId(), 1);
-            posAtual++;
-        }
+        // MOVE UMA SÓ VEZ (fundamental para o histórico!)
+        board.movePlayer(atual.getId(), nrSpaces);
 
-        while (posAtual > destino) {
-            board.movePlayer(atual.getId(), -1);
-            posAtual--;
-        }
+        int posFinal = board.getPlayerPosicao(atual.getId());
+        atual.registarPosicao(posFinal);
 
         return movimentoValido;
     }
+
 
 
     /**
@@ -745,12 +732,6 @@ public class GameManager {
             }
             else if (abismo.getId() == 9) {
                 String msg = aplicarSegmentationFault(pos);
-                if (msg != null && !msg.isEmpty()) {
-                    mensagem.append(msg);
-                }
-            }
-            else if (abismo.getId() == 20 && atual.isExperiente()) {
-                String msg = abismo.aplicarEfeito(atual, board, valorDadoLancado);
                 if (msg != null && !msg.isEmpty()) {
                     mensagem.append(msg);
                 }
