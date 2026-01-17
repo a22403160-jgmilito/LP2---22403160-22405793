@@ -63,6 +63,10 @@ public class GameManager {
 
     // para a nova variavel do player, experiencia
     private boolean experienciaAtiva = false;
+
+    // motivo final de cada jogador (preso ou derrotado)
+    private HashMap<Integer, String> motivoFinal = new HashMap<>();
+
     /**
      * Construtor vazio. O jogo só fica “pronto” após createInitialBoard().
      */
@@ -327,14 +331,23 @@ public class GameManager {
      * - Ou se o Board indica que há alguém na posição final.
      */
     public boolean gameIsOver() {
-        if (board == null) {
-            return false;
+        if (board == null) return false;
+
+        // vitória normal
+        if (winnerId != null) return true;
+        if (board.temJogadorNaPosicaoFinal()) return true;
+
+        // empate: ninguém pode jogar
+        boolean alguemPodeJogar = false;
+        for (Player p : players) {
+            if (p.isAlive() && p.isEnabled()) {
+                alguemPodeJogar = true;
+                break;
+            }
         }
-        if (winnerId != null) {
-            return true;
-        }
-        return board.temJogadorNaPosicaoFinal();
+        return !alguemPodeJogar;
     }
+
 
     /**
      * Devolve os resultados do jogo num ArrayList de strings,
@@ -393,7 +406,19 @@ public class GameManager {
         for (Player p : restantes) {
             res.add(p.getNome() + " " + p.getPosicao());
         }
+        boolean empate = (winnerId == null) && gameIsOver();
 
+        if (empate) {
+            res.add("O jogo terminou empatado.");
+            res.add("");
+            res.add("PARTICIPANTES");
+
+            for (Player p : players) {
+                String motivo = motivoFinal.get(p.getId());
+                if (motivo == null) motivo = p.getEstadoComoTexto(); // fallback
+                res.add(p.getNome() + " : " + p.getPosicao() + " : " + motivo);
+            }
+        }
         return res;
     }
 
@@ -724,6 +749,10 @@ public class GameManager {
 
         if (abismo != null) {
 
+            // guardar estado ANTES do efeito (para registar motivo final corretamente)
+            boolean aliveAntes = atual.isAlive();
+            boolean enabledAntes = atual.isEnabled();
+
             if (abismo.getId() == 8) {
                 String msg = aplicarCicloInfinito(atual, pos);
                 if (msg != null && !msg.isEmpty()) {
@@ -755,6 +784,17 @@ public class GameManager {
                         mensagem.append(msgAbismo);
                     }
                 }
+            }
+
+            // guardar estado DEPOIS do efeito e gravar motivo final se ficou preso ou morreu
+            boolean aliveDepois = atual.isAlive();
+            boolean enabledDepois = atual.isEnabled();
+
+            if (aliveAntes && !aliveDepois) {
+                setMotivoFinal(atual, abismo.getNome());
+            }
+            if (enabledAntes && !enabledDepois) {
+                setMotivoFinal(atual, abismo.getNome());
             }
 
         } else {
@@ -807,6 +847,7 @@ public class GameManager {
 
         return mensagem.toString();
     }
+
 
 
 
@@ -1220,6 +1261,7 @@ public class GameManager {
 
         // Atual fica preso
         atual.setEnabled(false);
+        setMotivoFinal(atual, "Ciclo Infinito");
 
         return "O programador " + atual.getNome()
                 + " entrou num Ciclo Infinito na casa " + pos
@@ -1300,5 +1342,11 @@ public class GameManager {
 
         return "Segmentation Fault! Como havia vários programadores na casa " + pos
                 + ", todos recuaram 3 casas.";
+    }
+
+    private void setMotivoFinal(Player p, String motivo) {
+        if (p != null && motivo != null && !motivo.isEmpty()) {
+            motivoFinal.put(p.getId(), motivo);
+        }
     }
 }

@@ -22,6 +22,6 @@ public class ProgramacaoFuncional extends Ferramentas {
     public boolean podeAnular(Abismos abismo) {
         // Programação Funcional ajuda a evitar erros de lógica,
         // por isso anula o abismo Erro de Lógica (ID 1).
-        return abismo.getId() == 5;
+        return abismo.getId() == 6;
     }
 }

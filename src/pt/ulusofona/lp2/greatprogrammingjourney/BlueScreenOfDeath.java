@@ -15,7 +15,7 @@ public class BlueScreenOfDeath extends Abismos {
     public String aplicarEfeito(Player jogador, Board board, int valorDado) {
 
         jogador.setAlive(false);
-
+        
         return "O programador " + jogador.getNome()
                 + " sofreu um Blue Screen of Death e foi derrotado, ficando fora do jogo.";
     }
