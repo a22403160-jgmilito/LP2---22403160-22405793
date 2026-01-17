@@ -14,22 +14,16 @@ public class CodigoDuplicado extends Abismos {
     @Override
     public String aplicarEfeito(Player jogador, Board board, int valorDado) {
 
-        int posAtual = board.getPlayerPosicao(jogador.getId());
-
-        // posição anterior (1 jogada atrás)
         int posAnterior = jogador.getPosicaoJogadas(1);
         if (!board.posicaoValida(posAnterior)) {
             posAnterior = 1;
         }
 
-        int delta = posAnterior - posAtual;
-
-        if (delta != 0) {
-            board.movePlayer(jogador.getId(), delta);
-        }
+        board.setPlayerPosicao(jogador.getId(), posAnterior);
 
         return "O programador " + jogador.getNome()
                 + " caiu no abismo Código Duplicado e voltou para a casa anterior (posição "
                 + posAnterior + ").";
     }
+
 }

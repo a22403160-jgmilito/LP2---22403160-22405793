@@ -89,6 +89,11 @@ public class GameManager {
      * usa a última conhecida (lastAbyssesAndTools).
      */
     public boolean createInitialBoard(String[][] playerInfo, int worldSize) {
+        experienciaAtiva = false;
+        for (Player p : players) {
+            p.setExperiente(false);
+            p.setEnabled(true); // se existir no teu Player
+        }
         return createInitialBoard(playerInfo, worldSize, lastAbyssesAndTools);
     }
 
@@ -250,19 +255,16 @@ public class GameManager {
             return false;
         }
 
-        // 1) nrSpaces fora [1..6]
         if (nrSpaces < 1 || nrSpaces > 6) {
             return false;
         }
 
         Player atual = players.get(currentPlayerIndex);
 
-        // 2) Jogador não está "Em Jogo" (Derrotado ou Preso) => movimento inválido
         if (!atual.isAlive() || !atual.isEnabled()) {
             return false;
         }
 
-        // 3) Restrições por linguagem
         String primeiraLing = getPrimeiraLinguagem(atual);
 
         if ("Assembly".equalsIgnoreCase(primeiraLing) && nrSpaces >= 3) {
@@ -272,10 +274,9 @@ public class GameManager {
             return false;
         }
 
-        // Guardar valor do dado (pode ser usado em efeitos de abismos)
         valorDadoLancado = nrSpaces;
 
-        // Guardar posição antes de mexer (histórico)
+        // REGISTAR APENAS A POSIÇÃO ANTES DO MOVIMENTO
         int posAtual = board.getPlayerPosicao(atual.getId());
         atual.registarPosicao(posAtual);
 
@@ -284,33 +285,28 @@ public class GameManager {
 
         boolean movimentoValido = true;
 
-        // 6) Se ultrapassa a meta: ajusta posição mas movimento é inválido
         if (destino > fim) {
             int excesso = destino - fim;
             destino = fim - excesso;
-            if (destino < 1){
+            if (destino < 1) {
                 destino = 1;
             }
             movimentoValido = false;
         }
 
-        // Move “passo a passo” para a direita (1 em 1)
         while (posAtual < destino) {
             board.movePlayer(atual.getId(), 1);
             posAtual++;
         }
 
-        // Move “passo a passo” para a esquerda (1 em 1)
         while (posAtual > destino) {
             board.movePlayer(atual.getId(), -1);
             posAtual--;
         }
 
-        // Regista posição final
-        atual.registarPosicao(posAtual);
-
         return movimentoValido;
     }
+
 
     /**
      * Obtém a “primeira linguagem” do jogador, a partir da string original,
@@ -644,8 +640,16 @@ public class GameManager {
         totalTurns = 1;
         winnerId = null;
 
+        // === RESET do "estado extra" para não vazar de jogos anteriores ===
+        experienciaAtiva = false;
+        for (Player p : players) {
+            p.setExperiente(false);
+            p.setEnabled(true);
+        }
+
         return true;
     }
+
 
     /**
      * Factory: cria instância de Abismo a partir do id.
@@ -745,7 +749,7 @@ public class GameManager {
                     mensagem.append(msg);
                 }
             }
-            else if (abismo instanceof LLM && atual.isExperiente()) {
+            else if (abismo.getId() == 20 && atual.isExperiente()) {
                 String msg = abismo.aplicarEfeito(atual, board, valorDadoLancado);
                 if (msg != null && !msg.isEmpty()) {
                     mensagem.append(msg);
@@ -773,7 +777,7 @@ public class GameManager {
             }
 
         } else {
-            // RESTAURADO: apanhar ferramenta quando não há abismo
+
             Ferramentas ferramenta = null;
             if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
                 ferramenta = ferramentasNaPosicao[pos];
@@ -822,6 +826,7 @@ public class GameManager {
 
         return mensagem.toString();
     }
+
 
 
     // =========================================================
@@ -971,6 +976,12 @@ public class GameManager {
             totalTurns = loadedTotalTurns;
             currentPlayerIndex = loadedCurrentPlayerIndex;
             winnerId = (winnerRaw < 0) ? null : winnerRaw;
+
+            experienciaAtiva = false;
+            for (Player p : players) {
+                p.setExperiente(false);
+                p.setEnabled(true); // se existir
+            }
 
         } catch (IOException e) {
             throw new InvalidFileException("Erro ao ler o ficheiro: " + e.getMessage());
