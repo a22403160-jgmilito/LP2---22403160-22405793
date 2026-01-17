@@ -61,7 +61,8 @@ public class GameManager {
     // Isto é importante para decidir se reactToAbyssOrTool deve devolver "" ou null.
     private boolean[] casaTeveFerramenta;
 
-
+    // para a nova variavel do player, experiencia
+    private boolean experienciaAtiva = false;
     /**
      * Construtor vazio. O jogo só fica “pronto” após createInitialBoard().
      */
@@ -663,6 +664,7 @@ public class GameManager {
             case 7: return new BlueScreenOfDeath();
             case 8: return new CicloInfinito();
             case 9: return new SegmentationFault();
+            case 20: return new LLM();
             default:
                 return null;
         }
@@ -747,7 +749,14 @@ public class GameManager {
                     mensagem.append(msg);
                 }
             }
-            // --- Abismos “normais” ---
+            // --- Caso especial: LLM + Experiência ---
+            else if (abismo instanceof LLM && atual.isExperiente()) {
+                String msg = abismo.aplicarEfeito(atual, board, valorDadoLancado);
+                if (msg != null && !msg.isEmpty()) {
+                    mensagem.append(msg);
+                }
+            }
+            // --- Abismos “normais” (inclui LLM sem experiência) ---
             else {
                 // Verifica se o jogador tem uma ferramenta que anula este abismo
                 Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
@@ -772,32 +781,30 @@ public class GameManager {
                 }
             }
 
-        } else {
-            // 2) Só apanha ferramenta se NÃO houver abismo
-            Ferramentas ferramenta = null;
-            if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
-                ferramenta = ferramentasNaPosicao[pos];
-            }
-
-            if (ferramenta != null) {
-                // Evita duplicar ferramentas iguais no inventário
-                if (!atual.temFerramentaComId(ferramenta.getId())) {
-                    atual.adicionarFerramenta(ferramenta);
-
-                    mensagem.append("O programador ")
-                            .append(atual.getNome())
-                            .append(" apanhou a ferramenta ")
-                            .append(ferramenta.getNome())
-                            .append(".");
-                }
-                // ferramenta permanece no tabuleiro (não removes do array)
-            }
         }
-
         // 3) Vitória: se chegou à casa final, marca winnerId (se ainda não havia)
         int novaPos = board.getPlayerPosicao(idJogador);
         if (board.posicaoVitoria(novaPos) && winnerId == null) {
             winnerId = idJogador;
+        }
+        // 4) Marcar fim do turno deste jogador
+        atual.incrementarTurno();
+
+        // Ativar experiência quando TODOS tiverem feito 3 turnos
+        if (!experienciaAtiva) {
+            boolean todos3 = true;
+            for (Player p : players) {
+                if (p.getTurnosJogador() < 3) {
+                    todos3 = false;
+                    break;
+                }
+            }
+            if (todos3) {
+                experienciaAtiva = true;
+                for (Player p : players) {
+                    p.setExperiente(true);
+                }
+            }
         }
 
         // 4) Avançar turno

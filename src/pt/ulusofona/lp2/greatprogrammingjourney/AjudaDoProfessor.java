@@ -24,6 +24,6 @@ public class AjudaDoProfessor extends Ferramentas {
         // Anula qualquer abismo comum (0–3, 5,6,9)
         // NÃO anula erros fatais ou mecânicas especiais: Crash, BSOD, Ciclo Infinito
         return id == 0 || id == 1 || id == 2 || id == 3
-                || id == 5 || id == 6 || id == 9;
+                || id == 5 || id == 6 || id == 9 || id == 20;
     }
 }

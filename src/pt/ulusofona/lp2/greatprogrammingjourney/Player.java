@@ -46,6 +46,10 @@ public class Player {
     // Lista de ferramentas apanhadas pelo jogador
     private List<Ferramentas> ferramentas = new ArrayList<>();
 
+    // modo experiência
+    private int turnosJogador = 0;
+    private boolean experiente = false;
+
     /**
      * Construtor do jogador.
      * Inicializa os dados básicos e coloca o jogador na posição inicial (casa 1),
@@ -276,6 +280,9 @@ public class Player {
             return "No tools";
         }
 
+        // ORDENAR alfabeticamente (ignorando maiúsculas/minúsculas)
+        nomes.sort(String.CASE_INSENSITIVE_ORDER);
+
         // Sem espaços, como no enunciado: "IDE;Herança"
         return String.join(";", nomes);
     }
@@ -380,5 +387,21 @@ public class Player {
         if (historicoPosicoes.isEmpty() || historicoPosicoes.get(historicoPosicoes.size() - 1) != pos) {
             historicoPosicoes.add(pos);
         }
+    }
+
+    public void incrementarTurno() {
+        turnosJogador++;
+    }
+
+    public int getTurnosJogador() {
+        return turnosJogador;
+    }
+
+    public boolean isExperiente() {
+        return experiente;
+    }
+
+    public void setExperiente(boolean experiente) {
+        this.experiente = experiente;
     }
 }
