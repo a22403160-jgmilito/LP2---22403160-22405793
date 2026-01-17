@@ -721,13 +721,11 @@ public class GameManager {
 
         StringBuilder mensagem = new StringBuilder();
 
-        // casaEspecial = tem abismo OU tem ferramenta OU já teve ferramenta antes
         boolean casaEspecial =
                 (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length && abismosNaPosicao[pos] != null)
                         || (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length && ferramentasNaPosicao[pos] != null)
                         || (casaTeveFerramenta != null && pos >= 1 && pos < casaTeveFerramenta.length && casaTeveFerramenta[pos]);
 
-        // 1) Abismo tem prioridade
         Abismos abismo = null;
         if (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length) {
             abismo = abismosNaPosicao[pos];
@@ -735,34 +733,28 @@ public class GameManager {
 
         if (abismo != null) {
 
-            // --- Caso especial: Ciclo Infinito (id 8) ---
             if (abismo.getId() == 8) {
                 String msg = aplicarCicloInfinito(atual, pos);
                 if (msg != null && !msg.isEmpty()) {
                     mensagem.append(msg);
                 }
             }
-            // --- Caso especial: Segmentation Fault (id 9) ---
             else if (abismo.getId() == 9) {
                 String msg = aplicarSegmentationFault(pos);
                 if (msg != null && !msg.isEmpty()) {
                     mensagem.append(msg);
                 }
             }
-            // --- Caso especial: LLM + Experiência ---
             else if (abismo instanceof LLM && atual.isExperiente()) {
                 String msg = abismo.aplicarEfeito(atual, board, valorDadoLancado);
                 if (msg != null && !msg.isEmpty()) {
                     mensagem.append(msg);
                 }
             }
-            // --- Abismos “normais” (inclui LLM sem experiência) ---
             else {
-                // Verifica se o jogador tem uma ferramenta que anula este abismo
                 Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
 
                 if (anuladora != null) {
-                    // Consome a ferramenta para anular o abismo
                     atual.removeFerramenta(anuladora);
 
                     mensagem.append("O programador ")
@@ -773,7 +765,6 @@ public class GameManager {
                             .append(abismo.getNome())
                             .append(".");
                 } else {
-                    // Sem proteção: aplicar o efeito do abismo
                     String msgAbismo = abismo.aplicarEfeito(atual, board, valorDadoLancado);
                     if (msgAbismo != null && !msgAbismo.isEmpty()) {
                         mensagem.append(msgAbismo);
@@ -781,16 +772,31 @@ public class GameManager {
                 }
             }
 
+        } else {
+            // RESTAURADO: apanhar ferramenta quando não há abismo
+            Ferramentas ferramenta = null;
+            if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
+                ferramenta = ferramentasNaPosicao[pos];
+            }
+
+            if (ferramenta != null && !atual.temFerramentaComId(ferramenta.getId())) {
+                atual.adicionarFerramenta(ferramenta);
+
+                mensagem.append("O programador ")
+                        .append(atual.getNome())
+                        .append(" apanhou a ferramenta ")
+                        .append(ferramenta.getNome())
+                        .append(".");
+            }
         }
-        // 3) Vitória: se chegou à casa final, marca winnerId (se ainda não havia)
+
         int novaPos = board.getPlayerPosicao(idJogador);
         if (board.posicaoVitoria(novaPos) && winnerId == null) {
             winnerId = idJogador;
         }
-        // 4) Marcar fim do turno deste jogador
+
         atual.incrementarTurno();
 
-        // Ativar experiência quando TODOS tiverem feito 3 turnos
         if (!experienciaAtiva) {
             boolean todos3 = true;
             for (Player p : players) {
@@ -807,19 +813,16 @@ public class GameManager {
             }
         }
 
-        // 4) Avançar turno
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         totalTurns++;
 
-        // Se não houve mensagem:
-        // - se casa especial: devolve "" (string vazia)
-        // - se não: devolve null
         if (mensagem.length() == 0) {
             return casaEspecial ? "" : null;
         }
 
         return mensagem.toString();
     }
+
 
     // =========================================================
     // SAVE GAME
