@@ -270,9 +270,13 @@ public class GameManager {
 
         Player atual = players.get(currentPlayerIndex);
 
-        // NÃO saltar jogadores aqui
-        if (!atual.isAlive() || !atual.isEnabled()) {
+        if (!atual.isAlive()) {
             return false;
+        }
+
+        if (!atual.isEnabled()) {
+            valorDadoLancado = nrSpaces; // opcional
+            return true; // importante: para permitir avançar o turno no reactToAbyssOrTool()
         }
 
 
@@ -755,6 +759,24 @@ public class GameManager {
                         || (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length && ferramentasNaPosicao[pos] != null)
                         || (casaTeveFerramenta != null && pos >= 1 && pos < casaTeveFerramenta.length && casaTeveFerramenta[pos]);
 
+        // Se estiver preso, não aplica nada (nem abismo, nem ferramenta).
+        // Só avança o turno e conta turnos.
+        if (!atual.isAlive()) {
+            return null;
+        }
+
+        if (!atual.isEnabled()) {
+
+
+            atual.incrementarTurno();
+            totalTurns++;
+
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+
+            // devolve null / "" conforme regra
+            return casaEspecial ? "" : null;
+        }
+
         Abismos abismo = null;
         if (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length) {
             abismo = abismosNaPosicao[pos];
@@ -771,7 +793,6 @@ public class GameManager {
                 if (msg != null && !msg.isEmpty()) mensagem.append(msg);
 
             } else {
-                // abismo "normal" (inclui o LLM id 20)
                 Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
 
                 if (anuladora != null) {
@@ -790,7 +811,6 @@ public class GameManager {
             }
 
         } else {
-            // sem abismo -> pode haver ferramenta
             Ferramentas ferramenta = null;
             if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
                 ferramenta = ferramentasNaPosicao[pos];
@@ -806,16 +826,13 @@ public class GameManager {
             }
         }
 
-        // vitória (fallback)
         int novaPos = board.getPlayerPosicao(idJogador);
         if (board.posicaoVitoria(novaPos) && winnerId == null) {
             winnerId = idJogador;
         }
 
-        // conta turnos do jogador
         atual.incrementarTurno();
 
-        // ativa experiência quando TODOS tiverem >=3 turnos
         if (!experienciaAtiva) {
             boolean todos3 = true;
             for (Player p : players) {
@@ -833,8 +850,6 @@ public class GameManager {
         }
 
         totalTurns++;
-
-        // passa a vez
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
 
         if (gameIsOver()) {
@@ -845,8 +860,8 @@ public class GameManager {
             return casaEspecial ? "" : null;
         }
         return mensagem.toString();
-
     }
+
 
     private void advanceToNextPlayablePlayer() {
         if (players.isEmpty()) return;
