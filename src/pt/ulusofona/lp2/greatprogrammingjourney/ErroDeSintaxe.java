@@ -13,20 +13,19 @@ public class ErroDeSintaxe extends Abismos {
 
     @Override
     public String aplicarEfeito(Player jogador, Board board, int valorDado) {
+        if (jogador == null || board == null) return "";
 
-        int posAtual = jogador.getPosicao();
-
-        // recuar 1 casa, mas nunca abaixo de 1
-        int novaPos = (posAtual > 1) ? posAtual - 1 : 1;
-
-        jogador.setPosicao(novaPos, board.getSize());
+        int id = jogador.getId();
+        int posAtual = board.getPlayerPosicao(id);
 
         if (posAtual > 1) {
+            board.movePlayer(id, -1);
+            int novaPos = board.getPlayerPosicao(id);
             return "O programador " + jogador.getNome()
                     + " caiu num Erro de Sintaxe e recuou 1 casa para a posição " + novaPos + ".";
-        } else {
-            return "O programador " + jogador.getNome()
-                    + " caiu num Erro de Sintaxe, mas já estava na primeira casa e não recuou.";
         }
+        return "O programador " + jogador.getNome()
+                + " caiu num Erro de Sintaxe, mas já estava na primeira casa e não recuou.";
     }
+
 }

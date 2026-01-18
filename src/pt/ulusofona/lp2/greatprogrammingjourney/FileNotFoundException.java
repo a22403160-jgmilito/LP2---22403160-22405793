@@ -13,24 +13,26 @@ public class FileNotFoundException extends Abismos {
 
     @Override
     public String aplicarEfeito(Player jogador, Board board, int valorDado) {
+        if (jogador == null || board == null) return "";
 
-        int posAtual = jogador.getPosicao();
+        int id = jogador.getId();
+        int posAtual = board.getPlayerPosicao(id);
 
-        // Recuar 3 casas, mínimo 1
-        int novaPos = posAtual - 3;
-        if (novaPos < 1) {
-            novaPos = 1;
+        int recuo = Math.min(3, posAtual - 1);
+        if (recuo > 0) {
+            board.movePlayer(id, -recuo);
         }
-        jogador.setPosicao(novaPos, board.getSize());
+
+        int novaPos = board.getPlayerPosicao(id);
 
         if (novaPos < posAtual) {
             return "O programador " + jogador.getNome()
                     + " encontrou um FileNotFoundException e recuou 3 casas, indo para a posição "
                     + novaPos + ".";
-        } else {
-            return "O programador " + jogador.getNome()
-                    + " encontrou um FileNotFoundException, mas já estava muito perto da primeira casa e permaneceu na posição "
-                    + novaPos + ".";
         }
+        return "O programador " + jogador.getNome()
+                + " encontrou um FileNotFoundException, mas já estava muito perto da primeira casa e permaneceu na posição "
+                + novaPos + ".";
     }
+
 }

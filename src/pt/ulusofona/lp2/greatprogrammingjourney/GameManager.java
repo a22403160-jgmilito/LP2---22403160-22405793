@@ -281,7 +281,6 @@ public class GameManager {
         valorDadoLancado = nrSpaces;
 
         int posAtual = board.getPlayerPosicao(atual.getId());
-        atual.registarPosicao(posAtual);
 
         boolean movimentoValido = true;
         if (posAtual + nrSpaces > board.getSize()) {
@@ -290,9 +289,6 @@ public class GameManager {
 
         // MOVE UMA SÓ VEZ (fundamental para o histórico!)
         board.movePlayer(atual.getId(), nrSpaces);
-
-        int posFinal = board.getPlayerPosicao(atual.getId());
-        atual.registarPosicao(posFinal);
 
         return movimentoValido;
     }
@@ -749,28 +745,19 @@ public class GameManager {
 
         if (abismo != null) {
 
-            // guardar estado ANTES do efeito (para registar motivo final corretamente)
-            boolean aliveAntes = atual.isAlive();
-            boolean enabledAntes = atual.isEnabled();
-
             if (abismo.getId() == 8) {
                 String msg = aplicarCicloInfinito(atual, pos);
-                if (msg != null && !msg.isEmpty()) {
-                    mensagem.append(msg);
-                }
-            }
-            else if (abismo.getId() == 9) {
+                if (msg != null && !msg.isEmpty()) mensagem.append(msg);
+
+            } else if (abismo.getId() == 9) {
                 String msg = aplicarSegmentationFault(pos);
-                if (msg != null && !msg.isEmpty()) {
-                    mensagem.append(msg);
-                }
-            }
-            else {
+                if (msg != null && !msg.isEmpty()) mensagem.append(msg);
+
+            } else {
                 Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
 
                 if (anuladora != null) {
                     atual.removeFerramenta(anuladora);
-
                     mensagem.append("O programador ")
                             .append(atual.getNome())
                             .append(" usou a ferramenta ")
@@ -780,25 +767,11 @@ public class GameManager {
                             .append(".");
                 } else {
                     String msgAbismo = abismo.aplicarEfeito(atual, board, valorDadoLancado);
-                    if (msgAbismo != null && !msgAbismo.isEmpty()) {
-                        mensagem.append(msgAbismo);
-                    }
+                    if (msgAbismo != null && !msgAbismo.isEmpty()) mensagem.append(msgAbismo);
                 }
             }
 
-            // guardar estado DEPOIS do efeito e gravar motivo final se ficou preso ou morreu
-            boolean aliveDepois = atual.isAlive();
-            boolean enabledDepois = atual.isEnabled();
-
-            if (aliveAntes && !aliveDepois) {
-                setMotivoFinal(atual, abismo.getNome());
-            }
-            if (enabledAntes && !enabledDepois) {
-                setMotivoFinal(atual, abismo.getNome());
-            }
-
         } else {
-
             Ferramentas ferramenta = null;
             if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
                 ferramenta = ferramentasNaPosicao[pos];
@@ -806,7 +779,6 @@ public class GameManager {
 
             if (ferramenta != null && !atual.temFerramentaComId(ferramenta.getId())) {
                 atual.adicionarFerramenta(ferramenta);
-
                 mensagem.append("O programador ")
                         .append(atual.getNome())
                         .append(" apanhou a ferramenta ")
@@ -825,7 +797,7 @@ public class GameManager {
         if (!experienciaAtiva) {
             boolean todos3 = true;
             for (Player p : players) {
-                if (p.getTurnosJogador() < 3) {
+                if (p.getTurnosJogador() < 3) { // <--- se a regra for "a partir do 4º turno"
                     todos3 = false;
                     break;
                 }
@@ -844,9 +816,9 @@ public class GameManager {
         if (mensagem.length() == 0) {
             return casaEspecial ? "" : null;
         }
-
         return mensagem.toString();
     }
+
 
 
 

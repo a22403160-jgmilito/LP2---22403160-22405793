@@ -14,7 +14,7 @@ public class CicloInfinito extends Abismos {
     @Override
     public String aplicarEfeito(Player jogador, Board board, int valorDado) {
 
-        int posAtual = jogador.getPosicao();
+        int posAtual = board.getPlayerPosicao(jogador.getId());
 
         jogador.setEnabled(false);
 

@@ -13,9 +13,10 @@ public class Crash extends Abismos {
 
     @Override
     public String aplicarEfeito(Player jogador, Board board, int valorDado) {
+        if (jogador == null || board == null) return "";
 
-        // Voltar diretamente à posição 1
-        jogador.setPosicao(1, board.getSize());
+        int id = jogador.getId();
+        board.setPlayerPosicao(id, 1);
 
         return "O programador " + jogador.getNome()
                 + " sofreu um Crash e voltou à primeira casa.";

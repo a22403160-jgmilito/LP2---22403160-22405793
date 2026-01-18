@@ -39,11 +39,8 @@ public class Board {
         this.size = size;
         this.players = players;
 
-        // Garantir que todos começam na casa 1 e isso entra no histórico.
-        // Nota: assume-se que Player.setPosicao(pos, size) valida e/ou regista histórico.
-        for (Player p : players) {
-            p.setPosicao(1, size);
-        }
+        // NÃO mexer na posição nem no histórico aqui.
+        // O Player já começa na casa 1 e já regista isso no histórico no construtor.
     }
 
     /**

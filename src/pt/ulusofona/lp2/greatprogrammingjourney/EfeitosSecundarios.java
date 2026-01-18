@@ -13,25 +13,30 @@ public class EfeitosSecundarios extends Abismos {
 
     @Override
     public String aplicarEfeito(Player jogador, Board board, int valorDado) {
+        if (jogador == null || board == null) return "";
 
-        int posAtual = jogador.getPosicao();
+        int id = jogador.getId();
+        int posAtual = board.getPlayerPosicao(id);
 
-        // posição de 2 jogadas atrás (histórico do jogador)
-        int posDoisMovimentosAtras = jogador.getPosicaoJogadas(2);
-
-        // segurança: garantir que é válida
-        if (!board.posicaoValida(posDoisMovimentosAtras)) {
-            posDoisMovimentosAtras = 1;
+        int posDoisAtras = jogador.getPosicaoJogadas(2);
+        if (!board.posicaoValida(posDoisAtras)) {
+            posDoisAtras = 1;
         }
-        jogador.setPosicao(posDoisMovimentosAtras, board.getSize());
 
-        if (posDoisMovimentosAtras != posAtual) {
+        int delta = posDoisAtras - posAtual;
+        if (delta != 0) {
+            board.movePlayer(id, delta);
+        }
+
+        int novaPos = board.getPlayerPosicao(id);
+
+        if (novaPos != posAtual) {
             return "O programador " + jogador.getNome()
                     + " sofreu Efeitos Secundários e voltou para a posição de 2 movimentos atrás ("
-                    + posDoisMovimentosAtras + ").";
-        } else {
-            return "O programador " + jogador.getNome()
-                    + " sofreu Efeitos Secundários, mas manteve-se na mesma posição.";
+                    + novaPos + ").";
         }
+        return "O programador " + jogador.getNome()
+                + " sofreu Efeitos Secundários, mas manteve-se na mesma posição.";
     }
+
 }

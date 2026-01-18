@@ -22,7 +22,7 @@ public class AjudaDoProfessor extends Ferramentas {
         if (abismo == null) return false;
         int id = abismo.getId();
         return id == 0 || id == 1 || id == 2 || id == 3
-                || id == 5 || id == 6 || id == 8 || id == 9 || id == 20;
+                || id == 5 || id == 6 ||  id == 20;
     }
 
 }
