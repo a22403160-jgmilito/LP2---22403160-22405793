@@ -98,6 +98,7 @@ public class GameManager {
             p.setExperiente(false);
             p.setEnabled(true); // se existir no teu Player
         }
+
         return createInitialBoard(playerInfo, worldSize, lastAbyssesAndTools);
     }
 
@@ -603,6 +604,9 @@ public class GameManager {
             ferramentasNaPosicao = null;
             return false;
         }
+
+        // ORDENAR AQUI
+        players.sort(Comparator.comparingInt(Player::getId));
 
         // Criar tabuleiro e estruturas auxiliares
         board = new Board(worldSize, players);
