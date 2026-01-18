@@ -837,8 +837,9 @@ public class GameManager {
         // passa a vez
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
 
-        // agora sim: saltar automaticamente mortos/presos
-        advanceToNextPlayablePlayer();
+        if (gameIsOver()) {
+            return mensagem.length() == 0 ? (casaEspecial ? "" : null) : mensagem.toString();
+        }
 
         if (mensagem.length() == 0) {
             return casaEspecial ? "" : null;
