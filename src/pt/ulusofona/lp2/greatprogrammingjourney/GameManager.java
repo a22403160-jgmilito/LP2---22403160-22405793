@@ -261,14 +261,13 @@ public class GameManager {
             return false;
         }
 
-        ensureCurrentPlayerPlayable(); // <<< AQUI
-
         if (nrSpaces < 1 || nrSpaces > 6) {
             return false;
         }
 
         Player atual = players.get(currentPlayerIndex);
 
+        // NÃO saltar jogadores aqui
         if (!atual.isAlive() || !atual.isEnabled()) {
             return false;
         }
@@ -284,17 +283,23 @@ public class GameManager {
 
         valorDadoLancado = nrSpaces;
 
-        // move (com bounce dentro do Board)
+        int posAtual = board.getPlayerPosicao(atual.getId());
+
+        // Se ultrapassar o fim -> movimento inválido (mas move na mesma com bounce)
+        boolean movimentoValido = (posAtual + nrSpaces <= board.getSize());
+
+        // move sempre (Board já faz bounce)
         board.movePlayer(atual.getId(), nrSpaces);
 
-        // se chegou ao fim, regista vencedor já aqui (para não gerar "empate" indevido)
+        // se chegou ao fim, regista vencedor
         int posFinal = board.getPlayerPosicao(atual.getId());
         if (board.posicaoVitoria(posFinal) && winnerId == null) {
             winnerId = atual.getId();
         }
 
-        return true;
+        return movimentoValido;
     }
+
 
 
 
@@ -1354,20 +1359,6 @@ public class GameManager {
     private void setMotivoFinal(Player p, String motivo) {
         if (p != null && motivo != null && !motivo.isEmpty()) {
             motivoFinal.put(p.getId(), motivo);
-        }
-    }
-
-    private void ensureCurrentPlayerPlayable() {
-        if (players.isEmpty()) return;
-
-        int tentativas = 0;
-        while (tentativas < players.size()) {
-            Player p = players.get(currentPlayerIndex);
-            if (p.isAlive() && p.isEnabled()) {
-                return;
-            }
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-            tentativas++;
         }
     }
 
