@@ -13,7 +13,9 @@ public class ExceptionAbismo extends Abismos {
 
     @Override
     public String aplicarEfeito(Player jogador, Board board, int valorDado) {
-        if (jogador == null || board == null) return "";
+        if (jogador == null || board == null) {
+            return "";
+        }
 
         int id = jogador.getId();
         int posAtual = board.getPlayerPosicao(id);

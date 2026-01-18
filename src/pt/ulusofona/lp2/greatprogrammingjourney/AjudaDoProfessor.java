@@ -19,7 +19,9 @@ public class AjudaDoProfessor extends Ferramentas {
 
     @Override
     public boolean podeAnular(Abismos abismo) {
-        if (abismo == null) return false;
+        if (abismo == null) {
+            return false;
+        }
         int id = abismo.getId();
         return id == 0 || id == 1 || id == 2 || id == 3
                 || id == 5 || id == 6 ||  id == 20;

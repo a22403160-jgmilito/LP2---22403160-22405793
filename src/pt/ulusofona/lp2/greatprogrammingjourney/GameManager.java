@@ -139,22 +139,24 @@ public class GameManager {
             return "";
         }
 
+        Integer vencedor = winnerId;
+
         StringBuilder sb = new StringBuilder();
+        boolean primeiro = true;
 
-        for (int i = 0; i < players.size(); i++) {
-            Player p = players.get(i);
-
-            sb.append(p.getNome())
-                    .append(" : ")
-                    .append(p.getFerramentasAsString());
-
-            if (i < players.size() - 1) {
-                sb.append(" | ");
+        for (Player p : players) {
+            if (vencedor != null && p.getId() == vencedor) {
+                continue; // não mostrar vencedor
             }
+
+            if (!primeiro) sb.append(" | ");
+            sb.append(p.getNome()).append(" : ").append(p.getFerramentasAsString());
+            primeiro = false;
         }
 
         return sb.toString();
     }
+
 
     /**
      * Versão “string formatada” da informação do programador.
@@ -280,18 +282,18 @@ public class GameManager {
 
         valorDadoLancado = nrSpaces;
 
-        int posAtual = board.getPlayerPosicao(atual.getId());
-
-        boolean movimentoValido = true;
-        if (posAtual + nrSpaces > board.getSize()) {
-            movimentoValido = false; // passou do fim -> inválido, mas move e faz bounce
-        }
-
-        // MOVE UMA SÓ VEZ (fundamental para o histórico!)
+        // move (com bounce dentro do Board)
         board.movePlayer(atual.getId(), nrSpaces);
 
-        return movimentoValido;
+        // se chegou ao fim, regista vencedor já aqui (para não gerar "empate" indevido)
+        int posFinal = board.getPlayerPosicao(atual.getId());
+        if (board.posicaoVitoria(posFinal) && winnerId == null) {
+            winnerId = atual.getId();
+        }
+
+        return true;
     }
+
 
 
 
@@ -754,6 +756,7 @@ public class GameManager {
                 if (msg != null && !msg.isEmpty()) mensagem.append(msg);
 
             } else {
+                // abismo "normal" (inclui o LLM id 20)
                 Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
 
                 if (anuladora != null) {
@@ -772,6 +775,7 @@ public class GameManager {
             }
 
         } else {
+            // sem abismo -> pode haver ferramenta
             Ferramentas ferramenta = null;
             if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
                 ferramenta = ferramentasNaPosicao[pos];
@@ -787,17 +791,20 @@ public class GameManager {
             }
         }
 
+        // vitória (fallback)
         int novaPos = board.getPlayerPosicao(idJogador);
         if (board.posicaoVitoria(novaPos) && winnerId == null) {
             winnerId = idJogador;
         }
 
+        // conta turnos do jogador
         atual.incrementarTurno();
 
+        // ativa experiência quando TODOS tiverem >=3 turnos
         if (!experienciaAtiva) {
             boolean todos3 = true;
             for (Player p : players) {
-                if (p.getTurnosJogador() < 3) { // <--- se a regra for "a partir do 4º turno"
+                if (p.getTurnosJogador() < 3) {
                     todos3 = false;
                     break;
                 }
@@ -810,14 +817,35 @@ public class GameManager {
             }
         }
 
-        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         totalTurns++;
+
+        // avançar para o próximo que pode jogar (importante!)
+        advanceToNextPlayablePlayer();
 
         if (mensagem.length() == 0) {
             return casaEspecial ? "" : null;
         }
         return mensagem.toString();
     }
+
+    private void advanceToNextPlayablePlayer() {
+        if (players.isEmpty()) return;
+
+        int tentativas = 0;
+        do {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+            Player p = players.get(currentPlayerIndex);
+
+            if (p.isAlive() && p.isEnabled()) {
+                return;
+            }
+
+            tentativas++;
+        } while (tentativas < players.size());
+
+        // se chegou aqui: ninguém pode jogar, fica como está
+    }
+
 
 
 
