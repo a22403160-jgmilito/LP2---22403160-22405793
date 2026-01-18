@@ -25,9 +25,16 @@ public class LLM extends Abismos {
             return "";
         }
 
-        // Com experiência: avança exatamente "valorDado" (bónus)
+        // Com experiência: avança "valorDado" mas NUNCA passa do fim (não pode dar bounce)
         if (jogador.isExperiente()) {
-            board.movePlayer(id, valorDado);
+            int destino = posAtual + valorDado;
+            if (destino > board.getSize()) {
+                destino = board.getSize();
+            }
+
+            int delta = destino - posAtual;
+            board.movePlayer(id, delta);
+
             return "Caiu no LLM mas já tem experiência! Avança tantas casas quantas as do último movimento";
         }
 

@@ -145,6 +145,9 @@ public class GameManager {
         boolean primeiro = true;
 
         for (Player p : players) {
+            if (!p.isAlive()) {
+                continue;
+            }
             if (vencedor != null && p.getId() == vencedor) {
                 continue; // não mostrar vencedor
             }
@@ -268,9 +271,17 @@ public class GameManager {
         Player atual = players.get(currentPlayerIndex);
 
         // NÃO saltar jogadores aqui
-        if (!atual.isAlive() || !atual.isEnabled()) {
+        if (!atual.isAlive()) {
             return false;
         }
+
+        if (!atual.isEnabled()) {
+            Abismos ab = abismosNaPosicao[board.getPlayerPosicao(atual.getId())];
+            if (ab == null || atual.getFerramentaQueAnula(ab) == null) {
+                return false;
+            }
+        }
+
 
         String primeiraLing = getPrimeiraLinguagem(atual);
 
@@ -829,7 +840,9 @@ public class GameManager {
         }
 
         totalTurns++;
-
+        if (gameIsOver()) {
+            return mensagem.length() == 0 ? (casaEspecial ? "" : null) : mensagem.toString();
+        }
         // passa a vez sempre 1 passo (sem saltar já aqui)
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
 
