@@ -238,21 +238,18 @@ public class GameManager {
      * @return id do jogador atual ou -1 se não há jogadores
      */
     public int getCurrentPlayerID() {
-        if (players.isEmpty()) return -1;
-
-        // se o atual não pode jogar, apontar para o próximo que pode
-        Player p = players.get(currentPlayerIndex);
-        if (!p.isAlive() || !p.isEnabled()) {
-            advanceToNextPlayablePlayer();
-            p = players.get(currentPlayerIndex);
-
-            if (!p.isAlive() || !p.isEnabled()) {
-                return -1; // ninguém pode jogar
-            }
+        if (players.isEmpty()) {
+            return -1;
         }
 
+        Player p = players.get(currentPlayerIndex);
+
+        if (!p.isAlive()) {
+            return -1;
+        }
         return p.getId();
     }
+
 
 
     /**
@@ -278,15 +275,13 @@ public class GameManager {
         if (nrSpaces < 1 || nrSpaces > 6) {
             return false;
         }
+        // garante que currentPlayerIndex nunca fica num morto
+        advanceSkippingDeadPlayers();
 
         Player atual = players.get(currentPlayerIndex);
 
-        if (!atual.isAlive() || !atual.isEnabled()) {
-            advanceToNextPlayablePlayer();
-            atual = players.get(currentPlayerIndex);
-            if (!atual.isAlive() || !atual.isEnabled()) {
-                return false;
-            }
+        if (!atual.isEnabled()) {
+            return false;
         }
 
         String primeiraLing = getPrimeiraLinguagem(atual);
@@ -397,12 +392,20 @@ public class GameManager {
             res.add("");
             res.add("Participantes:");
 
-            for (Player p : players) {
+            // copiar e ordenar por posição (descendente) e, em caso de empate, por nome (ascendente)
+            ArrayList<Player> lista = new ArrayList<>(players);
+            lista.sort((a, b) -> {
+                int pa = (board != null) ? board.getPlayerPosicao(a.getId()) : a.getPosicao();
+                int pb = (board != null) ? board.getPlayerPosicao(b.getId()) : b.getPosicao();
+
+                if (pa != pb) return Integer.compare(pb, pa); // posição desc
+                return a.getNome().compareToIgnoreCase(b.getNome()); // nome asc
+            });
+
+            for (Player p : lista) {
                 String motivo = motivoFinal.get(p.getId());
 
-                // Se morreu e não tens motivoFinal, tenta inferir
                 if (motivo == null) {
-                    // se estiver morto e o teu jogo usa BSD para matar, o teste quer "Blue Screen of Death"
                     if (!p.isAlive()) {
                         motivo = "Blue Screen of Death";
                     } else if (!p.isEnabled()) {
@@ -412,7 +415,8 @@ public class GameManager {
                     }
                 }
 
-                res.add(p.getNome() + " : " + p.getPosicao() + " : " + motivo);
+                int pos = (board != null) ? board.getPlayerPosicao(p.getId()) : p.getPosicao();
+                res.add(p.getNome() + " : " + pos + " : " + motivo);
             }
 
             return res;
@@ -434,19 +438,20 @@ public class GameManager {
         }
 
         restantes.sort((a, b) -> {
-            int pa = a.getPosicao();
-            int pb = b.getPosicao();
+            int pa = (board != null) ? board.getPlayerPosicao(a.getId()) : a.getPosicao();
+            int pb = (board != null) ? board.getPlayerPosicao(b.getId()) : b.getPosicao();
+
             if (pa != pb) return Integer.compare(pb, pa);
             return a.getNome().compareToIgnoreCase(b.getNome());
         });
 
         for (Player p : restantes) {
-            res.add(p.getNome() + " " + p.getPosicao());
+            int pos = (board != null) ? board.getPlayerPosicao(p.getId()) : p.getPosicao();
+            res.add(p.getNome() + " " + pos);
         }
 
         return res;
     }
-
 
     /**
      * Painel com autores (GUI).
@@ -1384,5 +1389,18 @@ public class GameManager {
             motivoFinal.put(p.getId(), motivo);
         }
     }
+
+    private void advanceSkippingDeadPlayers() {
+        if (players.isEmpty()) return;
+
+        int tentativas = 0;
+        while (tentativas < players.size()) {
+            Player p = players.get(currentPlayerIndex);
+            if (p.isAlive()) return;
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+            tentativas++;
+        }
+    }
+
 
 }
