@@ -238,11 +238,22 @@ public class GameManager {
      * @return id do jogador atual ou -1 se não há jogadores
      */
     public int getCurrentPlayerID() {
-        if (players.isEmpty()) {
-            return -1;
+        if (players.isEmpty()) return -1;
+
+        // se o atual não pode jogar, apontar para o próximo que pode
+        Player p = players.get(currentPlayerIndex);
+        if (!p.isAlive() || !p.isEnabled()) {
+            advanceToNextPlayablePlayer();
+            p = players.get(currentPlayerIndex);
+
+            if (!p.isAlive() || !p.isEnabled()) {
+                return -1; // ninguém pode jogar
+            }
         }
-        return players.get(currentPlayerIndex).getId();
+
+        return p.getId();
     }
+
 
     /**
      * Move o jogador atual nrSpaces casas.
@@ -270,9 +281,12 @@ public class GameManager {
 
         Player atual = players.get(currentPlayerIndex);
 
-        // NÃO saltar jogadores aqui
         if (!atual.isAlive() || !atual.isEnabled()) {
-            return false;
+            advanceToNextPlayablePlayer();
+            atual = players.get(currentPlayerIndex);
+            if (!atual.isAlive() || !atual.isEnabled()) {
+                return false;
+            }
         }
 
         String primeiraLing = getPrimeiraLinguagem(atual);
@@ -836,7 +850,7 @@ public class GameManager {
         totalTurns++;
 
         // passa a vez
-        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        advanceToNextPlayablePlayer();
 
         if (gameIsOver()) {
             return mensagem.length() == 0 ? (casaEspecial ? "" : null) : mensagem.toString();
