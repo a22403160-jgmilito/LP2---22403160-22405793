@@ -24,6 +24,6 @@ public class FerramentaTestesUnitarios extends Ferramentas {
             return false;
         }
         int id = abismo.getId();
-        return id == 1 || id == 8;
+        return id == 1 || id == 4 || id == 8;
     }
 }
