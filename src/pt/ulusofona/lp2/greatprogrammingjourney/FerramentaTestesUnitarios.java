@@ -23,6 +23,7 @@ public class FerramentaTestesUnitarios extends Ferramentas {
         if (abismo == null) {
             return false;
         }
-        return abismo.getId() == 1; // Erro de logica
+        int id = abismo.getId();
+        return id == 1 || id == 8;
     }
 }
