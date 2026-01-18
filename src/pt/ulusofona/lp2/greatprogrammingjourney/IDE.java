@@ -25,6 +25,6 @@ public class IDE extends Ferramentas {
         // - Erro de Sintaxe (0)
         // - Erro de Lógica (1)
         // - Código Duplicado (5)
-        return id == 0 || id == 1 || id == 5;
+        return id == 0 || id == 1 || id == 5 || id == 8;
     }
 }

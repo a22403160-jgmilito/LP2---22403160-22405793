@@ -126,7 +126,6 @@ public class Board {
      */
     public int movePlayer(int playerId, int nrSpaces) {
 
-        // Procura o jogador alvo pelo id
         Player alvo = null;
         for (Player p : players) {
             if (p.getId() == playerId) {
@@ -135,47 +134,38 @@ public class Board {
             }
         }
 
-        // Se não existe jogador com esse id
         if (alvo == null) {
             return -1;
         }
 
-        // Posição atual do jogador
         int pos = alvo.getPosicao();
 
-        // Andar para a frente (com "recua o excesso" no fim)
         if (nrSpaces > 0) {
-            while (nrSpaces > 0) {
-                pos++;
 
-                // Se passou o fim, aplica bounce back:
-                // ex: size=10, pos=11 -> pos = 10 - (11-10) = 9
-                if (pos > size) {
-                    pos = size - (pos - size);
-                }
-                nrSpaces--;
+            int destino = pos + nrSpaces;
+
+            // Se não passou o fim, é só avançar
+            if (destino <= size) {
+                pos = destino;
+            } else {
+                // passou do fim -> volta para trás pelo excesso (bounce 1x)
+                int excesso = destino - size;
+                pos = size - excesso;
+
+                // segurança (caso o excesso ainda seja grande)
+                if (pos < 1) pos = 1;
             }
-        }
-        // Andar para trás (por exemplo, efeitos de abismos)
-        else if (nrSpaces < 0) {
-            while (nrSpaces < 0) {
-                pos--;
 
-                // Não permite descer abaixo de 1
-                if (pos < 1) {
-                    pos = 1;
-                }
-                nrSpaces++;
-            }
-        }
-        // nrSpaces == 0 → não mexe
+        } else if (nrSpaces < 0) {
 
-        // Atualiza a posição no Player (com validação/histórico no Player)
+            pos = pos + nrSpaces;
+            if (pos < 1) pos = 1;
+        }
+
         alvo.setPosicao(pos, size);
-
-        // Devolve a posição final
         return alvo.getPosicao();
     }
+
 
     /**
      * Verifica se existe pelo menos um jogador na casa final.

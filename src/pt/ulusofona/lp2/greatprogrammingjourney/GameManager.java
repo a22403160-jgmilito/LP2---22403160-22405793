@@ -271,15 +271,8 @@ public class GameManager {
         Player atual = players.get(currentPlayerIndex);
 
         // NÃO saltar jogadores aqui
-        if (!atual.isAlive()) {
+        if (!atual.isAlive() || !atual.isEnabled()) {
             return false;
-        }
-
-        if (!atual.isEnabled()) {
-            Abismos ab = abismosNaPosicao[board.getPlayerPosicao(atual.getId())];
-            if (ab == null || atual.getFerramentaQueAnula(ab) == null) {
-                return false;
-            }
         }
 
 
@@ -840,17 +833,18 @@ public class GameManager {
         }
 
         totalTurns++;
-        if (gameIsOver()) {
-            return mensagem.length() == 0 ? (casaEspecial ? "" : null) : mensagem.toString();
-        }
-        // passa a vez sempre 1 passo (sem saltar já aqui)
+
+        // passa a vez
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
 
+        // agora sim: saltar automaticamente mortos/presos
+        advanceToNextPlayablePlayer();
 
         if (mensagem.length() == 0) {
             return casaEspecial ? "" : null;
         }
         return mensagem.toString();
+
     }
 
     private void advanceToNextPlayablePlayer() {
