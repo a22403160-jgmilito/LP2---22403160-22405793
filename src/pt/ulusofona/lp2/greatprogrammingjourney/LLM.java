@@ -19,14 +19,19 @@ public class LLM extends Abismos {
 
         int id = jogador.getId();
 
-        // Com experiência: avança exatamente "valorDado"
+        // Se já está na meta, não aplicar efeito nenhum (não pode "sair" da vitória)
+        int posAtual = board.getPlayerPosicao(id);
+        if (board.posicaoVitoria(posAtual)) {
+            return "";
+        }
+
+        // Com experiência: avança exatamente "valorDado" (bónus)
         if (jogador.isExperiente()) {
             board.movePlayer(id, valorDado);
             return "Caiu no LLM mas já tem experiência! Avança tantas casas quantas as do último movimento";
         }
 
         // Sem experiência: volta para a posição anterior (1 turno atrás)
-        int posAtual = board.getPlayerPosicao(id);
         int posAnterior = jogador.getPosicaoJogadas(1);
 
         if (!board.posicaoValida(posAnterior)) {
