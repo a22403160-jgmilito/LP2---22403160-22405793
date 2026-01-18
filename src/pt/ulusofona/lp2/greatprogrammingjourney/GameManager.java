@@ -241,13 +241,7 @@ public class GameManager {
         if (players.isEmpty()) {
             return -1;
         }
-
-        Player p = players.get(currentPlayerIndex);
-
-        if (!p.isAlive()) {
-            return -1;
-        }
-        return p.getId();
+        return players.get(currentPlayerIndex).getId();
     }
 
 
@@ -855,7 +849,7 @@ public class GameManager {
         totalTurns++;
 
         // passa a vez
-        advanceToNextPlayablePlayer();
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
 
         if (gameIsOver()) {
             return mensagem.length() == 0 ? (casaEspecial ? "" : null) : mensagem.toString();
@@ -867,29 +861,6 @@ public class GameManager {
         return mensagem.toString();
 
     }
-
-    private void advanceToNextPlayablePlayer() {
-        if (players.isEmpty()) return;
-
-        int tentativas = 0;
-        do {
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-            Player p = players.get(currentPlayerIndex);
-
-            if (p.isAlive() && p.isEnabled()) {
-                return;
-            }
-
-            tentativas++;
-        } while (tentativas < players.size());
-
-        // se chegou aqui: ninguém pode jogar, fica como está
-    }
-
-
-
-
-
 
     // =========================================================
     // SAVE GAME
