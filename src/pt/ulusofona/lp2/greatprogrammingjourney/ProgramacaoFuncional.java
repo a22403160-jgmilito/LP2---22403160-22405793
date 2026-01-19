@@ -25,6 +25,6 @@ public class ProgramacaoFuncional extends Ferramentas {
         }
         int id = abismo.getId();
 
-        return id == 5 || id == 6;
+        return id == 5 || id == 6 || id == 8;
     }
 }
