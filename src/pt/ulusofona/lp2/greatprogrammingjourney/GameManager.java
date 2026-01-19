@@ -278,14 +278,21 @@ public class GameManager {
         if (nrSpaces < 1 || nrSpaces > 6) {
             return false;
         }
-        // garante que currentPlayerIndex nunca fica num morto
+
+        // Salta jogadores mortos
         advanceSkippingDeadPlayers();
 
         Player atual = players.get(currentPlayerIndex);
 
+        // Se por algum motivo não há vivo (todos mortos), não dá para jogar
+        if (atual == null || !atual.isAlive()) {
+            return false;
+        }
+
+        // Se está preso, NÃO pode mover (logo false)
         if (!atual.isEnabled()) {
-            valorDadoLancado = nrSpaces;  // guarda o dado
-            return true;                  // permite avançar o turno no reactToAbyssOrTool()
+            valorDadoLancado = nrSpaces;
+            return false;
         }
 
         String primeiraLing = getPrimeiraLinguagem(atual);
@@ -301,13 +308,11 @@ public class GameManager {
 
         int posAtual = board.getPlayerPosicao(atual.getId());
 
-        // Se ultrapassar o fim -> movimento inválido (mas move na mesma com bounce)
         boolean movimentoValido = (posAtual + nrSpaces <= board.getSize());
 
-        // move sempre (Board já faz bounce)
+        // Move sempre (Board trata do bounce)
         board.movePlayer(atual.getId(), nrSpaces);
 
-        // se chegou ao fim, regista vencedor
         int posFinal = board.getPlayerPosicao(atual.getId());
         if (board.posicaoVitoria(posFinal) && winnerId == null) {
             winnerId = atual.getId();
@@ -315,10 +320,6 @@ public class GameManager {
 
         return movimentoValido;
     }
-
-
-
-
 
     /**
      * Obtém a “primeira linguagem” do jogador, a partir da string original,
