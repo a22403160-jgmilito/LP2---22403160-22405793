@@ -153,13 +153,17 @@ public class Board {
                 pos = size - excesso;
 
                 // segurança (caso o excesso ainda seja grande)
-                if (pos < 1) pos = 1;
+                if (pos < 1) {
+                    pos = 1;
+                }
             }
 
         } else if (nrSpaces < 0) {
 
             pos = pos + nrSpaces;
-            if (pos < 1) pos = 1;
+            if (pos < 1) {
+                pos = 1;
+            }
         }
 
         alvo.setPosicao(pos, size);
