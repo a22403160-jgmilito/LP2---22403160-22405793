@@ -124,6 +124,20 @@ public class GameManager {
         if (board.posicaoVitoria(nrSquare)) {
             return "glory.png";
         }
+        // Imagens personalizadas para o novo abismo/ferramenta
+        if (abismosNaPosicao != null && nrSquare >= 1 && nrSquare < abismosNaPosicao.length) {
+            Abismos ab = abismosNaPosicao[nrSquare];
+            if (ab != null && ab.getId() == 10) {
+                return "matrix.png";
+            }
+        }
+
+        if (ferramentasNaPosicao != null && nrSquare >= 1 && nrSquare < ferramentasNaPosicao.length) {
+            Ferramentas f = ferramentasNaPosicao[nrSquare];
+            if (f != null && f.getId() == 6) {
+                return "neo.png";
+            }
+        }
 
         // Sem outras imagens definidas
         return null;
@@ -516,6 +530,15 @@ public class GameManager {
 
         // Chaves dependem do enunciado/GUI.
         config.put("title", "Great Programming Journey");
+        config.put("hasNewAbyss", "true");
+        config.put("hasNewTool", "true");
+        config.put("gridBackgroundColor", "#000000");
+        config.put("slotBackgroundColor", "#001100");
+        config.put("slotNumberColor", "#00FF66");
+        config.put("toolbarBackgroundColor", "#000000");
+        config.put("slotNumberFontSize", "14");
+        config.put("cellSpacing", "2");
+        config.put("logoImage", "matrix_logo.png");
 
         return config;
     }
@@ -744,6 +767,7 @@ public class GameManager {
             case 7: return new BlueScreenOfDeath();
             case 8: return new CicloInfinito();
             case 9: return new SegmentationFault();
+            case 10: return new Matrix();
             case 20: return new LLM();
             default:
                 return null;
@@ -763,6 +787,7 @@ public class GameManager {
             case 3: return new TratamentoDeExcepcoes();
             case 4: return new IDE();
             case 5: return new AjudaDoProfessor();
+            case 6: return new Neo();
             default:
                 return null;
         }
