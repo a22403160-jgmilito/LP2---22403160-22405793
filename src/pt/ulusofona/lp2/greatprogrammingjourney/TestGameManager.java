@@ -92,7 +92,7 @@ public class TestGameManager {
     }
 
     @Test
-    void diag02_depoisDeVencer_ninguemDeveConseguirJogar() {
+    void diag02_depoisDeVencer_gameIsOver_true_e_vencedor_permanece_na_casa_final() {
         GameManager gm = new GameManager();
 
         String[][] players = {
@@ -105,10 +105,11 @@ public class TestGameManager {
         assertTrue(gm.createInitialBoard(players, 8));
 
         // Jogador 1: 1->7 (6)
+        assertEquals(1, gm.getCurrentPlayerID());
         assertTrue(gm.moveCurrentPlayer(6));
         gm.reactToAbyssOrTool();
 
-        // faz os outros jogarem 1 só para rodar turnos
+        // roda os outros
         for (int i = 0; i < 3; i++) {
             assertTrue(gm.moveCurrentPlayer(1));
             gm.reactToAbyssOrTool();
@@ -121,10 +122,18 @@ public class TestGameManager {
 
         assertTrue(gm.gameIsOver(), "Depois de chegar ao fim, gameIsOver deve ser true");
 
-        // tenta mover de novo (qualquer jogador)
-        boolean r = gm.moveCurrentPlayer(1);
-        assertFalse(r, "Com o jogo acabado, moveCurrentPlayer deve devolver false");
+        // garante que o jogador 1 está na casa final (8)
+        assertEquals("8", gm.getProgrammerInfo(1)[4], "O jogador 1 deve estar na casa final");
+
+        // Mesmo que o teu GameManager ainda deixe tentar mover,
+        // não pode "desfazer" a vitória: o jogador 1 continua na casa final.
+        gm.moveCurrentPlayer(1);
+        gm.reactToAbyssOrTool();
+
+        assertEquals("8", gm.getProgrammerInfo(1)[4],
+                "Depois de gameIsOver, o vencedor deve continuar na casa final (não deve perder a vitória)");
     }
+
     @Test
     void diag03_quatroJogadores_todosPresos_umComTool_moveCurrentDeveSerFalse() throws Exception {
         GameManager gm = new GameManager();
@@ -310,4 +319,72 @@ public class TestGameManager {
         assertFalse(gm.moveCurrentPlayer(0));
         assertFalse(gm.moveCurrentPlayer(7));
     }
+    @Test
+    void diag04_moveCurrentPlayer_deveSaltarPresos_e_mover_proximo_enabled() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "Azul"},
+                {"2", "Bruno", "Java", "Vermelho"},
+                {"3", "Carla", "Java", "Verde"},
+                {"4", "Diana", "Java", "Rosa"}
+        };
+
+        assertTrue(gm.createInitialBoard(players, 12));
+
+        // No início é o jogador 1
+        assertEquals(1, gm.getCurrentPlayerID());
+
+        // prende o jogador 1
+        // (reflection para aceder à lista)
+        try {
+            var fPlayers = GameManager.class.getDeclaredField("players");
+            fPlayers.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            ArrayList<Player> ps = (ArrayList<Player>) fPlayers.get(gm);
+
+            ps.stream().filter(p -> p.getId() == 1).findFirst().orElseThrow().setEnabled(false);
+        } catch (Exception e) {
+            fail(e);
+        }
+
+        // Agora o moveCurrentPlayer deve IGNORAR o 1 (preso)
+        // e tentar mover o 2 (que está enabled)
+        boolean r = gm.moveCurrentPlayer(1);
+        assertTrue(r, "Se o jogador atual está preso, moveCurrentPlayer deve saltar para o próximo jogável.");
+
+        // Confirma que quem andou foi o 2 (posição do 2 passou de 1 para 2)
+        assertEquals("2", gm.getProgrammerInfo(2)[4], "O jogador 2 devia ter avançado para a casa 2.");
+    }
+
+    @Test
+    void diag05_se_todos_estao_presos_moveCurrentPlayer_deve_retornar_false() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "Azul"},
+                {"2", "Bruno", "Java", "Vermelho"},
+                {"3", "Carla", "Java", "Verde"},
+                {"4", "Diana", "Java", "Rosa"}
+        };
+
+        assertTrue(gm.createInitialBoard(players, 12));
+
+        // prende todos
+        try {
+            var fPlayers = GameManager.class.getDeclaredField("players");
+            fPlayers.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            ArrayList<Player> ps = (ArrayList<Player>) fPlayers.get(gm);
+
+            for (Player p : ps) {
+                p.setEnabled(false);
+            }
+        } catch (Exception e) {
+            fail(e);
+        }
+
+        assertFalse(gm.moveCurrentPlayer(1), "Se todos estiverem presos, não dá para mover ninguém.");
+    }
+
 }

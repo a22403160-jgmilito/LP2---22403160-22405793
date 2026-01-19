@@ -289,34 +289,34 @@ public class GameManager {
             return false;
         }
 
-        // (opcional mas recomendado) se o jogo já acabou, ninguém joga mais
-        if (gameIsOver()) {
-            return false;
-        }
+        // NÃO bloquear aqui pelo gameIsOver, porque ele ainda pode estar instável
+        // e isso faz o move falhar antes de tentar jogar.
+        // if (gameIsOver()) return false;
 
         if (nrSpaces < 1 || nrSpaces > 6) {
             return false;
         }
 
-        // Salta jogadores mortos
-        advanceSkippingDeadPlayers();
+        // 1) Salta mortos E presos: encontra alguém que esteja vivo e enabled
+        int tentativas = 0;
+        while (tentativas < players.size()) {
+            Player p = players.get(currentPlayerIndex);
+            if (p != null && p.isAlive() && p.isEnabled()) {
+                break; // achou jogável
+            }
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+            tentativas++;
+        }
 
+        // 2) Se deu a volta inteira e não achou ninguém jogável
         Player atual = players.get(currentPlayerIndex);
-
-        // Se por algum motivo não há vivo (todos mortos), não dá para jogar
-        if (atual == null || !atual.isAlive()) {
+        if (atual == null || !atual.isAlive() || !atual.isEnabled()) {
+            valorDadoLancado = nrSpaces;
             return false;
         }
 
-        // Se JÁ estava preso antes da jogada, não pode mover (regra do Ciclo Infinito)
-        if (!atual.isEnabled()) {
-            valorDadoLancado = nrSpaces; // guarda na mesma
-            return false;
-        }
-
-        // Restrições por linguagem
+        // 3) Regras de linguagem
         String primeiraLing = getPrimeiraLinguagem(atual);
-
         if ("Assembly".equalsIgnoreCase(primeiraLing) && nrSpaces >= 3) {
             return false;
         }
@@ -324,18 +324,17 @@ public class GameManager {
             return false;
         }
 
-        // Guarda o valor do dado para a reação posterior (reactToAbyssOrTool)
+        // 4) Guarda o dado
         valorDadoLancado = nrSpaces;
 
-        // --- AQUI está a diferença importante ---
-        // Se ultrapassar o fim, o Board faz bounce, mas o moveCurrentPlayer deve devolver FALSE.
+        // 5) valida "bounce"
         int posAtual = board.getPlayerPosicao(atual.getId());
         boolean movimentoValido = (posAtual + nrSpaces <= board.getSize());
 
-        // Move SEMPRE (o Board trata do bounce)
+        // 6) move sempre (Board faz bounce)
         board.movePlayer(atual.getId(), nrSpaces);
 
-        // Se chegou ao fim, regista vencedor
+        // 7) regista vencedor
         int posFinal = board.getPlayerPosicao(atual.getId());
         if (board.posicaoVitoria(posFinal) && winnerId == null) {
             winnerId = atual.getId();
@@ -343,9 +342,6 @@ public class GameManager {
 
         return movimentoValido;
     }
-
-
-
 
 
     /**
