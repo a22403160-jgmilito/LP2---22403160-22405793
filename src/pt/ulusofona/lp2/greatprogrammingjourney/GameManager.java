@@ -303,15 +303,13 @@ public class GameManager {
             return false;
         }
 
-        // Guardar o estado "preso" ANTES de qualquer movimento/efeito
-        boolean estavaPreso = !atual.isEnabled();
-
-        // Se JÁ estava preso antes da jogada, não pode mover
-        if (estavaPreso) {
-            valorDadoLancado = nrSpaces;
+        // Se JÁ estava preso antes da jogada, não pode mover (regra do Ciclo Infinito)
+        if (!atual.isEnabled()) {
+            valorDadoLancado = nrSpaces; // guarda na mesma
             return false;
         }
 
+        // Restrições por linguagem (mantive como tinhas)
         String primeiraLing = getPrimeiraLinguagem(atual);
 
         if ("Assembly".equalsIgnoreCase(primeiraLing) && nrSpaces >= 3) {
@@ -321,14 +319,10 @@ public class GameManager {
             return false;
         }
 
+        // Guarda o valor do dado para a reação posterior (reactToAbyssOrTool)
         valorDadoLancado = nrSpaces;
 
-        int posAtual = board.getPlayerPosicao(atual.getId());
-
-        // Se ultrapassar o fim -> movimento inválido (mas move na mesma com bounce)
-        boolean movimentoValido = (posAtual + nrSpaces <= board.getSize());
-
-        // Move sempre (Board trata do bounce)
+        // Move SEMPRE (o Board trata do bounce)
         board.movePlayer(atual.getId(), nrSpaces);
 
         // Se chegou ao fim, regista vencedor
@@ -337,8 +331,11 @@ public class GameManager {
             winnerId = atual.getId();
         }
 
-        return movimentoValido;
+        // Se o jogador conseguiu jogar e mover, então o move é considerado "true"
+        // mesmo que tenha havido bounce.
+        return true;
     }
+
 
 
 
