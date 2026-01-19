@@ -21,60 +21,100 @@ public class TestEfeitosSecundarios {
     }
 
     @Test
-    public void test03_AplicarEfeito_DeveVoltarParaPosicaoDeDoisMovimentosAtras() {
-        Player p = new Player(1, "Ana", "Java", "Azul");
-        Board b = new Board(10, List.of(p));
-
-        // Simular histórico: 2 atrás = 3, anterior = 6, atual = 8
-        p.registarPosicao(3);
-        p.registarPosicao(6);
-        p.setPosicao(8, b.getSize());
-
+    public void test03_AplicarEfeito_JogadorNull_DeveRetornarVazio() {
         Abismos ab = new EfeitosSecundarios();
-        String msg = ab.aplicarEfeito(p, b, 4);
+        Board b = new Board(10, List.of(new Player(1, "Ana", "Java", "Azul")));
 
-        assertEquals(3, p.getPosicao(), "Deve voltar para a posição de 2 movimentos atrás (3)");
-        assertNotNull(msg);
-        assertTrue(msg.contains("Ana"));
-        assertTrue(msg.contains("posição de 2 movimentos atrás (3)"));
+        String msg = ab.aplicarEfeito(null, b, 1);
+        assertEquals("", msg);
     }
 
     @Test
-    public void test04_AplicarEfeito_SeHistoricoInvalido_DeveIrPara1() {
+    public void test04_AplicarEfeito_BoardNull_DeveRetornarVazio() {
+        Abismos ab = new EfeitosSecundarios();
+        Player p = new Player(1, "Ana", "Java", "Azul");
+
+        String msg = ab.aplicarEfeito(p, null, 1);
+        assertEquals("", msg);
+    }
+
+    @Test
+    public void test05_AplicarEfeito_DeveVoltarParaPosicaoDeDoisMovimentosAtras() {
+        Abismos ab = new EfeitosSecundarios();
+
+        Player p = new Player(1, "Ana", "Java", "Azul");
+        Board b = new Board(10, List.of(p));
+
+        // histórico: ... 2 movimentos atrás = 3
+        // posAtual no board = 8
+        p.registarPosicao(3);
+        p.registarPosicao(6); // só para ter mais histórico
+        b.setPlayerPosicao(1, 8);
+
+        String msg = ab.aplicarEfeito(p, b, 4);
+
+        assertEquals(3, b.getPlayerPosicao(1));
+        assertEquals(
+                "O programador Ana sofreu Efeitos Secundários e voltou para a posição de 2 movimentos atrás (3).",
+                msg
+        );
+    }
+
+    @Test
+    public void test06_AplicarEfeito_PosDoisAtrasInvalidaPorSerMenorQue1_DeveIrPara1() {
+        Abismos ab = new EfeitosSecundarios();
+
         Player p = new Player(2, "Bruno", "C", "Vermelho");
         Board b = new Board(10, List.of(p));
 
-        // Simular 2 atrás inválido (0)
+        // 2 atrás inválido (0) -> clamp para 1
         p.registarPosicao(0);
         p.registarPosicao(5);
-        p.setPosicao(7, b.getSize());
+        b.setPlayerPosicao(2, 7);
 
-        Abismos ab = new EfeitosSecundarios();
         String msg = ab.aplicarEfeito(p, b, 2);
 
-        assertEquals(1, p.getPosicao(), "Se a posição de 2 movimentos atrás for inválida, deve ir para 1");
-        assertNotNull(msg);
+        assertEquals(1, b.getPlayerPosicao(2));
         assertTrue(msg.contains("posição de 2 movimentos atrás (1)"));
     }
 
     @Test
-    public void test05_AplicarEfeito_SePosDoisMovimentosAtrasIgualAtual_MantemPosicao() {
+    public void test07_AplicarEfeito_PosDoisAtrasInvalidaPorSerMaiorQueSize_DeveIrPara1() {
+        Abismos ab = new EfeitosSecundarios();
+
         Player p = new Player(3, "Carla", "Python", "Verde");
         Board b = new Board(10, List.of(p));
 
-        // Forçar caso em que 2 atrás = atual.
-        // Exemplo: histórico [7, 8] e atual=7,
-        // dependendo da implementação do getPosicaoJogadas(2), isto dá 7.
-        p.registarPosicao(7);
-        p.registarPosicao(8);
-        p.setPosicao(7, b.getSize());
+        // 2 atrás inválido (> size) -> clamp para 1
+        p.registarPosicao(999);
+        p.registarPosicao(4);
+        b.setPlayerPosicao(3, 6);
 
-        Abismos ab = new EfeitosSecundarios();
         String msg = ab.aplicarEfeito(p, b, 1);
 
-        assertEquals(7, p.getPosicao(), "Deve manter-se na mesma posição");
-        assertNotNull(msg);
-        assertTrue(msg.contains("Carla"));
-        assertTrue(msg.contains("manteve-se na mesma posição"));
+        assertEquals(1, b.getPlayerPosicao(3));
+        assertTrue(msg.contains("posição de 2 movimentos atrás (1)"));
+    }
+
+    @Test
+    public void test08_AplicarEfeito_DeltaZero_NaoMove_E_MensagemDeMantem() {
+        Abismos ab = new EfeitosSecundarios();
+
+        Player p = new Player(4, "Diana", "Kotlin", "Rosa");
+        Board b = new Board(10, List.of(p));
+
+        // Queremos delta = 0:
+        // posAtual = 5 e posDoisAtras = 5
+        p.registarPosicao(5);
+        p.registarPosicao(8); // intermédia
+        b.setPlayerPosicao(4, 5);
+
+        String msg = ab.aplicarEfeito(p, b, 3);
+
+        assertEquals(5, b.getPlayerPosicao(4));
+        assertEquals(
+                "O programador Diana sofreu Efeitos Secundários, mas manteve-se na mesma posição.",
+                msg
+        );
     }
 }
