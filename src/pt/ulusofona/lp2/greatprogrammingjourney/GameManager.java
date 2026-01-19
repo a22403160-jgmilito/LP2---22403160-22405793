@@ -284,7 +284,8 @@ public class GameManager {
         Player atual = players.get(currentPlayerIndex);
 
         if (!atual.isEnabled()) {
-            return false;
+            valorDadoLancado = nrSpaces;  // guarda o dado
+            return true;                  // permite avançar o turno no reactToAbyssOrTool()
         }
 
         String primeiraLing = getPrimeiraLinguagem(atual);
@@ -365,17 +366,26 @@ public class GameManager {
             return true;
         }
 
-        // se TODOS morreram, acabou
-        boolean existeVivo = false;
+        // Se existir alguém vivo que ainda possa "continuar o jogo", então NÃO acabou
         for (Player p : players) {
-            if (p.isAlive()) {
-                existeVivo = true;
-                break;
+            if (!p.isAlive()) {
+                continue;
+            }
+
+            // pode jogar normalmente
+            if (p.isEnabled()) {
+                return false;
+            }
+
+            // está preso, mas tem ferramentas -> testes consideram que ainda não acabou
+            if (p.getFerramentas() != null && !p.getFerramentas().isEmpty()) {
+                return false;
             }
         }
-        return !existeVivo;
-    }
 
+        // Se chegou aqui: ou todos morreram, ou os vivos estão presos e sem ferramentas
+        return true;
+    }
 
 
     /**
