@@ -242,8 +242,16 @@ public class GameManager {
         if (players.isEmpty()) {
             return -1;
         }
+
+        advanceSkippingDeadPlayers();
+
+        if (players.isEmpty()) {
+            return -1;
+        }
+
         return players.get(currentPlayerIndex).getId();
     }
+
 
 
 
@@ -760,8 +768,10 @@ public class GameManager {
             return null;
         }
 
-        Player atual = players.get(currentPlayerIndex);
+        // garante que o jogador atual não é um morto
+        advanceSkippingDeadPlayers();
 
+        Player atual = players.get(currentPlayerIndex);
 
         int idJogador = atual.getId();
         int pos = board.getPlayerPosicao(idJogador);
@@ -789,9 +799,13 @@ public class GameManager {
                 if (msg != null && !msg.isEmpty()) mensagem.append(msg);
 
             } else {
-                // abismo "normal" (inclui o LLM id 20)
                 Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
 
+                // Ajuda do Professor só anula o LLM se o jogador NÃO tiver experiência.
+                // Se tiver experiência, o LLM tem de aplicar o bónus mesmo com a Ajuda do Professor.
+                if (abismo.getId() == 20 && atual.isExperiente() && anuladora instanceof AjudaDoProfessor) {
+                    anuladora = null;
+                }
                 if (anuladora != null) {
                     atual.removeFerramenta(anuladora);
                     mensagem.append("O programador ")
@@ -808,7 +822,6 @@ public class GameManager {
             }
 
         } else {
-            // sem abismo -> pode haver ferramenta
             Ferramentas ferramenta = null;
             if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
                 ferramenta = ferramentasNaPosicao[pos];
@@ -824,16 +837,13 @@ public class GameManager {
             }
         }
 
-        // vitória (fallback)
         int novaPos = board.getPlayerPosicao(idJogador);
         if (board.posicaoVitoria(novaPos) && winnerId == null) {
             winnerId = idJogador;
         }
 
-        // conta turnos do jogador
         atual.incrementarTurno();
 
-        // ativa experiência quando TODOS tiverem >=3 turnos
         if (!experienciaAtiva) {
             boolean todos3 = true;
             for (Player p : players) {
@@ -852,8 +862,9 @@ public class GameManager {
 
         totalTurns++;
 
-        // passa a vez
+        // passa a vez (e salta mortos)
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        advanceSkippingDeadPlayers();
 
         if (gameIsOver()) {
             return mensagem.length() == 0 ? (casaEspecial ? "" : null) : mensagem.toString();
@@ -863,8 +874,8 @@ public class GameManager {
             return casaEspecial ? "" : null;
         }
         return mensagem.toString();
-
     }
+
 
     // =========================================================
     // SAVE GAME
