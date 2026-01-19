@@ -289,6 +289,11 @@ public class GameManager {
             return false;
         }
 
+        // (opcional mas recomendado) se o jogo já acabou, ninguém joga mais
+        if (gameIsOver()) {
+            return false;
+        }
+
         if (nrSpaces < 1 || nrSpaces > 6) {
             return false;
         }
@@ -303,16 +308,13 @@ public class GameManager {
             return false;
         }
 
-        // Guarda o valor do dado para a reação posterior (reactToAbyssOrTool)
-        valorDadoLancado = nrSpaces;
-
-        // a jogada "acontece" mas não há movimento
-        // Quem vai tratar a mensagem e passar a vez é o reactToAbyssOrTool()
+        // Se JÁ estava preso antes da jogada, não pode mover (regra do Ciclo Infinito)
         if (!atual.isEnabled()) {
-            return true;
+            valorDadoLancado = nrSpaces; // guarda na mesma
+            return false;
         }
 
-        // Restrições por linguagem (mantive como está no teu código)
+        // Restrições por linguagem
         String primeiraLing = getPrimeiraLinguagem(atual);
 
         if ("Assembly".equalsIgnoreCase(primeiraLing) && nrSpaces >= 3) {
@@ -321,6 +323,14 @@ public class GameManager {
         if ("C".equalsIgnoreCase(primeiraLing) && nrSpaces >= 4) {
             return false;
         }
+
+        // Guarda o valor do dado para a reação posterior (reactToAbyssOrTool)
+        valorDadoLancado = nrSpaces;
+
+        // --- AQUI está a diferença importante ---
+        // Se ultrapassar o fim, o Board faz bounce, mas o moveCurrentPlayer deve devolver FALSE.
+        int posAtual = board.getPlayerPosicao(atual.getId());
+        boolean movimentoValido = (posAtual + nrSpaces <= board.getSize());
 
         // Move SEMPRE (o Board trata do bounce)
         board.movePlayer(atual.getId(), nrSpaces);
@@ -331,7 +341,7 @@ public class GameManager {
             winnerId = atual.getId();
         }
 
-        return true;
+        return movimentoValido;
     }
 
 
