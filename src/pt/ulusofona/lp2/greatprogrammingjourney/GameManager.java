@@ -306,7 +306,7 @@ public class GameManager {
         // PRESO (Ciclo Infinito): não pode mover => false
         if (!atual.isEnabled()) {
             valorDadoLancado = nrSpaces;
-            return true;
+            return false;
         }
 
         String primeiraLing = getPrimeiraLinguagem(atual);
