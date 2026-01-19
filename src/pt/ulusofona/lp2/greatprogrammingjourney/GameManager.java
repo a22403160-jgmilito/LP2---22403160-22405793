@@ -303,8 +303,11 @@ public class GameManager {
             return false;
         }
 
-        // PRESO (Ciclo Infinito): não pode mover => false
-        if (!atual.isEnabled()) {
+        // Guardar o estado "preso" ANTES de qualquer movimento/efeito
+        boolean estavaPreso = !atual.isEnabled();
+
+        // Se JÁ estava preso antes da jogada, não pode mover
+        if (estavaPreso) {
             valorDadoLancado = nrSpaces;
             return false;
         }
@@ -322,11 +325,13 @@ public class GameManager {
 
         int posAtual = board.getPlayerPosicao(atual.getId());
 
+        // Se ultrapassar o fim -> movimento inválido (mas move na mesma com bounce)
         boolean movimentoValido = (posAtual + nrSpaces <= board.getSize());
 
         // Move sempre (Board trata do bounce)
         board.movePlayer(atual.getId(), nrSpaces);
 
+        // Se chegou ao fim, regista vencedor
         int posFinal = board.getPlayerPosicao(atual.getId());
         if (board.posicaoVitoria(posFinal) && winnerId == null) {
             winnerId = atual.getId();
@@ -334,6 +339,7 @@ public class GameManager {
 
         return movimentoValido;
     }
+
 
 
     /**
