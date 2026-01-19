@@ -167,7 +167,9 @@ public class GameManager {
                 continue; // não mostrar vencedor
             }
 
-            if (!primeiro) sb.append(" | ");
+            if (!primeiro) {
+                sb.append(" | ");
+            }
             sb.append(p.getNome()).append(" : ").append(p.getFerramentasAsString());
             primeiro = false;
         }
@@ -435,7 +437,9 @@ public class GameManager {
                 int pa = (board != null) ? board.getPlayerPosicao(a.getId()) : a.getPosicao();
                 int pb = (board != null) ? board.getPlayerPosicao(b.getId()) : b.getPosicao();
 
-                if (pa != pb) return Integer.compare(pb, pa); // posição desc
+                if (pa != pb){
+                    return Integer.compare(pb, pa); // posição desc
+                }
                 return a.getNome().compareToIgnoreCase(b.getNome()); // nome asc
             });
 
@@ -470,7 +474,9 @@ public class GameManager {
 
         ArrayList<Player> restantes = new ArrayList<>();
         for (Player p : players) {
-            if (winnerId != null && p.getId() == winnerId) continue;
+            if (winnerId != null && p.getId() == winnerId) {
+                continue;
+            }
             restantes.add(p);
         }
 
@@ -478,7 +484,9 @@ public class GameManager {
             int pa = (board != null) ? board.getPlayerPosicao(a.getId()) : a.getPosicao();
             int pb = (board != null) ? board.getPlayerPosicao(b.getId()) : b.getPosicao();
 
-            if (pa != pb) return Integer.compare(pb, pa);
+            if (pa != pb) {
+                return Integer.compare(pb, pa);
+            }
             return a.getNome().compareToIgnoreCase(b.getNome());
         });
 
@@ -808,6 +816,50 @@ public class GameManager {
      * - verifica vitória e define winnerId
      * - avança turno (currentPlayerIndex) e incrementa totalTurns
      */
+    private void atualizarExperienciaSeAplicavel() {
+        if (experienciaAtiva) {
+            return;
+        }
+
+        boolean todos3 = true;
+        for (Player p : players) {
+            if (p.getTurnosJogador() < 3) {
+                todos3 = false;
+                break;
+            }
+        }
+
+        if (todos3) {
+            experienciaAtiva = true;
+            for (Player p : players) {
+                p.setExperiente(true);
+            }
+        }
+    }
+
+    private boolean isCasaEspecial(int pos) {
+        if (pos < 1) {
+            return false;
+        }
+
+        if (abismosNaPosicao != null && pos < abismosNaPosicao.length && abismosNaPosicao[pos] != null) {
+            return true;
+        }
+        if (ferramentasNaPosicao != null && pos < ferramentasNaPosicao.length && ferramentasNaPosicao[pos] != null) {
+            return true;
+        }
+        return casaTeveFerramenta != null && pos < casaTeveFerramenta.length && casaTeveFerramenta[pos];
+    }
+
+    private void finalizarTurno(Player atual) {
+        atual.incrementarTurno();
+        atualizarExperienciaSeAplicavel();
+
+        totalTurns++;
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        advanceSkippingDeadPlayers();
+    }
+
     public String reactToAbyssOrTool() {
         if (board == null || players.isEmpty()) {
             return null;
@@ -821,43 +873,13 @@ public class GameManager {
 
         if (!atual.isEnabled()) {
             String msg = "O programador " + atual.getNome() + " está preso e não pode jogar.";
-            atual.incrementarTurno();
-
-            if (!experienciaAtiva) {
-                boolean todos3 = true;
-                for (Player p : players) {
-                    if (p.getTurnosJogador() < 3) {
-                        todos3 = false;
-                        break;
-                    }
-                }
-                if (todos3) {
-                    experienciaAtiva = true;
-                    for (Player p : players) {
-                        p.setExperiente(true);
-                    }
-                }
-            }
-
-            totalTurns++;
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-            advanceSkippingDeadPlayers();
+            finalizarTurno(atual);
             return msg;
         }
 
         int idJogador = atual.getId();
         int pos = board.getPlayerPosicao(idJogador);
-
-        boolean casaEspecial = false;
-        if (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length && abismosNaPosicao[pos] != null) {
-            casaEspecial = true;
-        }
-        if (!casaEspecial && ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length && ferramentasNaPosicao[pos] != null) {
-            casaEspecial = true;
-        }
-        if (!casaEspecial && casaTeveFerramenta != null && pos >= 1 && pos < casaTeveFerramenta.length && casaTeveFerramenta[pos]) {
-            casaEspecial = true;
-        }
+        boolean casaEspecial = isCasaEspecial(pos);
 
         StringBuilder mensagem = new StringBuilder();
 
@@ -882,7 +904,6 @@ public class GameManager {
             } else {
                 Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
 
-                // Sem instanceof: compara pelo id da ferramenta AjudaDoProfessor (5)
                 if (abId == 20 && atual.isExperiente() && anuladora != null && anuladora.getId() == 5) {
                     anuladora = null;
                 }
@@ -904,6 +925,7 @@ public class GameManager {
             if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
                 ferramenta = ferramentasNaPosicao[pos];
             }
+
             if (ferramenta != null && !atual.temFerramentaComId(ferramenta.getId())) {
                 atual.adicionarFerramenta(ferramenta);
                 mensagem.append("O programador ").append(atual.getNome())
@@ -916,36 +938,14 @@ public class GameManager {
             winnerId = idJogador;
         }
 
-        atual.incrementarTurno();
-
-        if (!experienciaAtiva) {
-            boolean todos3 = true;
-            for (Player p : players) {
-                if (p.getTurnosJogador() < 3) {
-                    todos3 = false;
-                    break;
-                }
-            }
-            if (todos3) {
-                experienciaAtiva = true;
-                for (Player p : players) {
-                    p.setExperiente(true);
-                }
-            }
-        }
-
-        totalTurns++;
-        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-        advanceSkippingDeadPlayers();
+        finalizarTurno(atual);
 
         if (mensagem.length() == 0) {
-            if (casaEspecial) {
-                return "";
-            }
-            return null;
+            return casaEspecial ? "" : null;
         }
         return mensagem.toString();
     }
+
 
 
     // =========================================================
@@ -1448,12 +1448,16 @@ public class GameManager {
     }
 
     private void advanceSkippingDeadPlayers() {
-        if (players.isEmpty()) return;
+        if (players.isEmpty()) {
+            return;
+        }
 
         int tentativas = 0;
         while (tentativas < players.size()) {
             Player p = players.get(currentPlayerIndex);
-            if (p.isAlive()) return;
+            if (p.isAlive()) {
+                return;
+            }
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
             tentativas++;
         }

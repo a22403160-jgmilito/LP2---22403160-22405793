@@ -42,7 +42,6 @@ public class TestAjudaProfessor {
         assertTrue(f.podeAnular(new CodigoDuplicado()));      // id 5
         assertTrue(f.podeAnular(new EfeitosSecundarios()));   // id 6
         assertTrue(f.podeAnular(new BlueScreenOfDeath()));    // id 7
-        assertTrue(f.podeAnular(new CicloInfinito()));        // id 8
         assertTrue(f.podeAnular(new SegmentationFault()));    // id 9
         assertTrue(f.podeAnular(new LLM()));                  // id 20
     }

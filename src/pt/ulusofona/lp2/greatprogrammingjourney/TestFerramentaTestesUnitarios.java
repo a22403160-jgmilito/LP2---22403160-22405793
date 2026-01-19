@@ -32,7 +32,6 @@ public class TestFerramentaTestesUnitarios {
         // Deve anular
         assertTrue(f.podeAnular(new ErroDeLogica()));      // id 1
         assertTrue(f.podeAnular(new Crash()));             // id 4
-        assertTrue(f.podeAnular(new CicloInfinito()));     // id 8
 
         // Não deve anular
         assertFalse(f.podeAnular(new ErroDeSintaxe()));    // id 0

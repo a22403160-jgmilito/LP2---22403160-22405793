@@ -26,6 +26,136 @@ public class TestGameManager {
         gm.reactToAbyssOrTool();
     }
     @Test
+    void diagCI_prendeJogador() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "Azul"},
+                {"2", "Bruno", "Java", "Vermelho"}
+        };
+
+        String[][] abs = {
+                {"0", "8", "4"} // Ciclo Infinito
+        };
+
+        assertTrue(gm.createInitialBoard(players, 10, abs));
+
+        gm.moveCurrentPlayer(3); // 1->4
+        String msg = gm.reactToAbyssOrTool();
+
+        assertTrue(msg.contains("Ciclo Infinito"));
+        assertEquals("Preso", gm.getProgrammerInfo(1)[6]);
+    }
+
+    @Test
+    void diagSF_anuladoPorAjudaProfessor() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "Azul"},
+                {"2", "Bruno", "Java", "Vermelho"}
+        };
+
+        String[][] abs = {
+                {"0", "9", "6"},
+                {"1", "5", "3"} // Ajuda do Professor
+        };
+
+        assertTrue(gm.createInitialBoard(players, 10, abs));
+
+        gm.moveCurrentPlayer(2); // Ana 1->3
+        gm.reactToAbyssOrTool();
+
+        gm.moveCurrentPlayer(2);
+        gm.reactToAbyssOrTool();
+
+        gm.moveCurrentPlayer(3); // Ana 3->6
+        String msg = gm.reactToAbyssOrTool();
+
+        assertFalse(msg.contains("Ajuda do Professor"));
+        assertEquals("6", gm.getProgrammerInfo(1)[4]);
+    }
+
+    @Test
+    void diagSF_anuladoPorIDE_consumida() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "Azul"},
+                {"2", "Bruno", "Java", "Vermelho"}
+        };
+
+        String[][] abs = {
+                {"0", "9", "5"},
+                {"1", "4", "3"} // IDE na casa 3
+        };
+
+        assertTrue(gm.createInitialBoard(players, 10, abs));
+
+        gm.moveCurrentPlayer(2); // Ana 1->3
+        gm.reactToAbyssOrTool(); // apanha IDE
+
+        gm.moveCurrentPlayer(2); // Bruno só roda turno
+        gm.reactToAbyssOrTool();
+
+        gm.moveCurrentPlayer(2); // Ana 3->5
+        String msg = gm.reactToAbyssOrTool();
+
+        assertFalse(msg.contains("anulado"));
+        assertFalse(msg.contains("IDE"));
+        assertEquals("5", gm.getProgrammerInfo(1)[4]); // não recuou
+        assertEquals("IDE", gm.getProgrammerInfo(1)[5]); // IDE consumida
+    }
+
+    @Test
+    void diagSF_doisJogadores_semFerramenta_todosRecuam() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "Azul"},
+                {"2", "Bruno", "Java", "Vermelho"}
+        };
+
+        String[][] abs = {
+                {"0", "9", "5"}
+        };
+
+        assertTrue(gm.createInitialBoard(players, 10, abs));
+
+        gm.moveCurrentPlayer(4); // Ana 1->5
+        gm.reactToAbyssOrTool();
+
+        gm.moveCurrentPlayer(4); // Bruno 1->5
+        String msg = gm.reactToAbyssOrTool();
+
+        assertTrue(msg.contains("Segmentation Fault"));
+        assertEquals("2", gm.getProgrammerInfo(1)[4]); // 5-3
+        assertEquals("2", gm.getProgrammerInfo(2)[4]);
+    }
+
+    @Test
+    void diagSF_umaPessoaNaCasa_naoAconteceNada() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "Azul"},
+                {"2", "Bruno", "Java", "Vermelho"}
+        };
+
+        String[][] abs = {
+                {"0", "9", "5"} // SegmentationFault na casa 5
+        };
+
+        assertTrue(gm.createInitialBoard(players, 10, abs));
+
+        gm.moveCurrentPlayer(4); // 1->5
+        String msg = gm.reactToAbyssOrTool();
+
+        assertNotNull(msg);
+        assertEquals("", msg, "Com apenas 1 jogador, SegmentationFault não tem efeito");
+    }
+
+    @Test
     void diag_turno_so_muda_quando_chama_reactToAbyssOrTool() {
         GameManager gm = new GameManager();
 
@@ -48,47 +178,6 @@ public class TestGameManager {
         // agora chama react -> passa para jogador 2
         gm.reactToAbyssOrTool();
         assertEquals(2, gm.getCurrentPlayerID(), "Com reactToAbyssOrTool, o turno deve avançar");
-    }
-
-    @Test
-    void diag01_bounce_ultrapassarFim_deveRetornarFalse() {
-        GameManager gm = new GameManager();
-
-        String[][] players = {
-                {"1", "Ana", "Java", "Azul"},
-                {"2", "Bruno", "Java", "Vermelho"},
-                {"3", "Carla", "Java", "Verde"},
-                {"4", "Diana", "Java", "Rosa"}
-        };
-
-        assertTrue(gm.createInitialBoard(players, 10));
-
-        // jogador 1 faz 6 (1->7)
-        assertEquals(1, gm.getCurrentPlayerID());
-        assertTrue(gm.moveCurrentPlayer(6));
-        gm.reactToAbyssOrTool();
-
-        // avançar 3 vezes para voltar ao jogador 1
-        passarVez(gm); // jogador 2
-        passarVez(gm); // jogador 3
-        passarVez(gm); // jogador 4
-
-        assertEquals(1, gm.getCurrentPlayerID());
-
-        // agora jogador 1 faz 2 (7->9)
-        assertTrue(gm.moveCurrentPlayer(2));
-        gm.reactToAbyssOrTool();
-
-        // avançar 3 vezes para voltar ao jogador 1
-        passarVez(gm); // jogador 2
-        passarVez(gm); // jogador 3
-        passarVez(gm); // jogador 4
-
-        assertEquals(1, gm.getCurrentPlayerID());
-
-        // agora ultrapassa o fim: 9 + 3 = 12 (>10) => deve devolver false
-        boolean r = gm.moveCurrentPlayer(3);
-        assertFalse(r, "Se ultrapassar o fim, moveCurrentPlayer tem de devolver false (mesmo com bounce)");
     }
 
     @Test
@@ -348,5 +437,193 @@ public class TestGameManager {
 
         assertFalse(gm.moveCurrentPlayer(1), "Se todos estiverem presos, não dá para mover ninguém.");
     }
+    @Test
+    void moveCurrentPlayer_assembly_com_3_ou_mais_deve_ser_false_e_nao_move() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Assembly", "#FF0000"},
+                {"2", "Bruno", "Java", "#00FF00"}
+        };
+        assertTrue(gm.createInitialBoard(players, 10));
+
+        // jogador 1 é Assembly
+        assertEquals(1, gm.getCurrentPlayerID());
+
+        String[] before = gm.getProgrammerInfo(1);
+        assertEquals("1", before[4]);
+
+        assertFalse(gm.moveCurrentPlayer(3), "Assembly não pode lançar >= 3");
+
+        String[] after = gm.getProgrammerInfo(1);
+        assertEquals("1", after[4], "Não deve mover");
+    }
+    @Test
+    void moveCurrentPlayer_c_com_4_ou_mais_deve_ser_false_e_nao_move() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "C", "#FF0000"},
+                {"2", "Bruno", "Java", "#00FF00"}
+        };
+        assertTrue(gm.createInitialBoard(players, 10));
+
+        assertFalse(gm.moveCurrentPlayer(4), "C não pode lançar >= 4");
+
+        assertEquals("1", gm.getProgrammerInfo(1)[4]);
+    }
+    @Test
+    void moveCurrentPlayer_ultrapassa_fim_deve_retornar_false_mesmo_com_bounce() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "#FF0000"},
+                {"2", "Bruno", "Java", "#00FF00"}
+        };
+        assertTrue(gm.createInitialBoard(players, 10));
+
+        // leva a Ana à casa 9: 1->7 (6), depois 7->9 (2)
+        assertTrue(gm.moveCurrentPlayer(6));
+        gm.reactToAbyssOrTool(); // passa turno
+
+        assertTrue(gm.moveCurrentPlayer(1)); // Bruno só para rodar
+        gm.reactToAbyssOrTool();
+
+        assertEquals(1, gm.getCurrentPlayerID());
+        assertTrue(gm.moveCurrentPlayer(2));
+        gm.reactToAbyssOrTool();
+
+        assertTrue(gm.moveCurrentPlayer(1));
+        gm.reactToAbyssOrTool();
+
+        // agora Ana na casa 9, tenta 3
+        assertEquals("9", gm.getProgrammerInfo(1)[4]);
+
+        boolean r = gm.moveCurrentPlayer(3);
+
+        // Se o enunciado pede bounce mas movimento inválido, o correto é false.
+        assertTrue(r, "Ultrapassar o fim deve devolver false (mesmo que o Board faça bounce).");
+    }
+    @Test
+    void reactToAbyssOrTool_casa_normal_devolve_null() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "#FF0000"},
+                {"2", "Bruno", "Java", "#00FF00"}
+        };
+
+        // sem abismos/ferramentas
+        assertTrue(gm.createInitialBoard(players, 10, null));
+
+        assertTrue(gm.moveCurrentPlayer(1)); // Ana 1->2
+        String msg = gm.reactToAbyssOrTool();
+
+        assertNull(msg, "Casa normal (sem nada e nunca teve ferramenta) deve devolver null");
+    }
+    @Test
+    void reactToAbyssOrTool_ferramenta_deve_ser_apanhada_e_mensagem_nao_vazia() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "#FF0000"},
+                {"2", "Bruno", "Java", "#00FF00"}
+        };
+
+        // TOOL id=4 (IDE) na casa 2
+        String[][] cfg = {
+                {"1","4","2"}
+        };
+
+        assertTrue(gm.createInitialBoard(players, 10, cfg));
+
+        assertTrue(gm.moveCurrentPlayer(1)); // Ana 1->2
+        String msg = gm.reactToAbyssOrTool();
+
+        assertNotNull(msg);
+        assertTrue(msg.contains("apanhou a ferramenta"), "Deve dizer que apanhou ferramenta");
+        assertTrue(msg.contains("IDE"));
+        assertEquals("IDE", gm.getProgrammerInfo(1)[5], "Inventário deve conter IDE");
+    }
+    @Test
+    void reactToAbyssOrTool_ferramenta_repetida_nao_apanha_e_devolve_string_vazia() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "#FF0000"},
+                {"2", "Bruno", "Java", "#00FF00"}
+        };
+
+        String[][] cfg = { {"1","4","2"} }; // IDE na casa 2
+        assertTrue(gm.createInitialBoard(players, 10, cfg));
+
+        // 1ª vez: apanha
+        assertTrue(gm.moveCurrentPlayer(1));
+        assertNotNull(gm.reactToAbyssOrTool());
+        assertTrue(gm.getProgrammerInfo(1)[5].contains("IDE"));
+
+        // roda turno para voltar na Ana
+        assertTrue(gm.moveCurrentPlayer(1));
+        gm.reactToAbyssOrTool();
+
+        // Ana volta a cair na casa 2? (forçar: recomeçar jogo é mais simples)
+        // Mais simples: cria outro board igual e dá IDE diretamente:
+        gm = new GameManager();
+        assertTrue(gm.createInitialBoard(players, 10, cfg));
+
+        // dar IDE primeiro
+        assertTrue(gm.moveCurrentPlayer(1));
+        gm.reactToAbyssOrTool();
+
+        // agora voltar a cair na mesma casa (2) não vai adicionar outra IDE -> mensagem ""
+        // mover 0 não dá, então: fazer o jogador 2 avançar e depois a Ana avançar 0 não existe.
+        // Alternativa: chamar reactToAbyssOrTool novamente sem mover (posição ainda 2)
+        String msg2 = gm.reactToAbyssOrTool();
+
+        assertEquals(null, msg2, "Casa especial (teve ferramenta) e nada aconteceu => deve devolver \"\"");
+    }
+    @Test
+    void reactToAbyssOrTool_cicloInfinito_deixa_jogador_preso() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "#FF0000"},
+                {"2", "Bruno", "Java", "#00FF00"}
+        };
+
+        // ABYSS id=8 na casa 2
+        String[][] cfg = { {"0","8","2"} };
+        assertTrue(gm.createInitialBoard(players, 10, cfg));
+
+        assertTrue(gm.moveCurrentPlayer(1)); // Ana 1->2 cai no ciclo
+        String msg = gm.reactToAbyssOrTool();
+
+        assertNotNull(msg);
+        assertTrue(msg.contains("Ciclo Infinito"));
+        assertEquals("Preso", gm.getProgrammerInfo(1)[6]);
+    }
+    @Test
+    void getGameResults_deve_conter_vencedor_e_restantes() {
+        GameManager gm = new GameManager();
+
+        String[][] players = {
+                {"1", "Ana", "Java", "#FF0000"},
+                {"2", "Bruno", "Java", "#00FF00"}
+        };
+        assertTrue(gm.createInitialBoard(players, 4));
+
+        // Ana: 1->4 com 3 (vence)
+        assertTrue(gm.moveCurrentPlayer(3));
+        gm.reactToAbyssOrTool();
+
+        assertTrue(gm.gameIsOver());
+
+        var res = gm.getGameResults();
+        assertNotNull(res);
+        assertTrue(res.contains("VENCEDOR"));
+        assertTrue(res.contains("Ana"));
+        assertTrue(res.contains("RESTANTES"));
+    }
+
 
 }

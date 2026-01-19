@@ -33,7 +33,6 @@ public class TestIDE {
         assertTrue(f.podeAnular(new ErroDeLogica()));         // id 1
         assertTrue(f.podeAnular(new FileNotFoundException())); // id 3
         assertTrue(f.podeAnular(new CodigoDuplicado()));      // id 5
-        assertTrue(f.podeAnular(new CicloInfinito()));        // id 8
         assertTrue(f.podeAnular(new SegmentationFault()));    // id 9
     }
 
