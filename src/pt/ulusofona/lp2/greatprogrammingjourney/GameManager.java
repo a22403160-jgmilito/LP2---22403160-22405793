@@ -289,33 +289,26 @@ public class GameManager {
             return false;
         }
 
-        // NÃO bloquear aqui pelo gameIsOver, porque ele ainda pode estar instável
-        // e isso faz o move falhar antes de tentar jogar.
-        // if (gameIsOver()) return false;
-
         if (nrSpaces < 1 || nrSpaces > 6) {
             return false;
         }
 
-        // 1) Salta mortos E presos: encontra alguém que esteja vivo e enabled
-        int tentativas = 0;
-        while (tentativas < players.size()) {
-            Player p = players.get(currentPlayerIndex);
-            if (p != null && p.isAlive() && p.isEnabled()) {
-                break; // achou jogável
-            }
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-            tentativas++;
-        }
+        // só saltar mortos
+        advanceSkippingDeadPlayers();
 
-        // 2) Se deu a volta inteira e não achou ninguém jogável
         Player atual = players.get(currentPlayerIndex);
-        if (atual == null || !atual.isAlive() || !atual.isEnabled()) {
-            valorDadoLancado = nrSpaces;
+
+        if (atual == null || !atual.isAlive()) {
             return false;
         }
 
-        // 3) Regras de linguagem
+        // se já está preso antes de jogar, não se move
+        if (!atual.isEnabled()) {
+            valorDadoLancado = nrSpaces; // opcional, mas ok
+            return false;
+        }
+
+        // regras de linguagem
         String primeiraLing = getPrimeiraLinguagem(atual);
         if ("Assembly".equalsIgnoreCase(primeiraLing) && nrSpaces >= 3) {
             return false;
@@ -324,17 +317,13 @@ public class GameManager {
             return false;
         }
 
-        // 4) Guarda o dado
         valorDadoLancado = nrSpaces;
 
-        // 5) valida "bounce"
         int posAtual = board.getPlayerPosicao(atual.getId());
         boolean movimentoValido = (posAtual + nrSpaces <= board.getSize());
 
-        // 6) move sempre (Board faz bounce)
         board.movePlayer(atual.getId(), nrSpaces);
 
-        // 7) regista vencedor
         int posFinal = board.getPlayerPosicao(atual.getId());
         if (board.posicaoVitoria(posFinal) && winnerId == null) {
             winnerId = atual.getId();
@@ -342,6 +331,7 @@ public class GameManager {
 
         return movimentoValido;
     }
+
 
 
     /**

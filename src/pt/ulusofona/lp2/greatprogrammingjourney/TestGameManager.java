@@ -320,44 +320,6 @@ public class TestGameManager {
         assertFalse(gm.moveCurrentPlayer(7));
     }
     @Test
-    void diag04_moveCurrentPlayer_deveSaltarPresos_e_mover_proximo_enabled() {
-        GameManager gm = new GameManager();
-
-        String[][] players = {
-                {"1", "Ana", "Java", "Azul"},
-                {"2", "Bruno", "Java", "Vermelho"},
-                {"3", "Carla", "Java", "Verde"},
-                {"4", "Diana", "Java", "Rosa"}
-        };
-
-        assertTrue(gm.createInitialBoard(players, 12));
-
-        // No início é o jogador 1
-        assertEquals(1, gm.getCurrentPlayerID());
-
-        // prende o jogador 1
-        // (reflection para aceder à lista)
-        try {
-            var fPlayers = GameManager.class.getDeclaredField("players");
-            fPlayers.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            ArrayList<Player> ps = (ArrayList<Player>) fPlayers.get(gm);
-
-            ps.stream().filter(p -> p.getId() == 1).findFirst().orElseThrow().setEnabled(false);
-        } catch (Exception e) {
-            fail(e);
-        }
-
-        // Agora o moveCurrentPlayer deve IGNORAR o 1 (preso)
-        // e tentar mover o 2 (que está enabled)
-        boolean r = gm.moveCurrentPlayer(1);
-        assertTrue(r, "Se o jogador atual está preso, moveCurrentPlayer deve saltar para o próximo jogável.");
-
-        // Confirma que quem andou foi o 2 (posição do 2 passou de 1 para 2)
-        assertEquals("2", gm.getProgrammerInfo(2)[4], "O jogador 2 devia ter avançado para a casa 2.");
-    }
-
-    @Test
     void diag05_se_todos_estao_presos_moveCurrentPlayer_deve_retornar_false() {
         GameManager gm = new GameManager();
 

@@ -39,4 +39,27 @@ class TestSaveLoad {
         GameManager gm = new GameManager();
         assertThrows(java.io.FileNotFoundException.class, () -> gm.loadGame(f));
     }
+    @Test
+    void save_null_retornaFalse() {
+        GameManager gm = new GameManager();
+        assertFalse(gm.saveGame(null));
+    }
+
+    @Test
+    void save_semBoard_retornaFalse(@TempDir Path tempDir) {
+        GameManager gm = new GameManager();
+        File f = tempDir.resolve("save.txt").toFile();
+        assertFalse(gm.saveGame(f));
+    }
+
+    @Test
+    void load_worldInvalido_lancaInvalidFileException(@TempDir Path tempDir) throws Exception {
+        File f = tempDir.resolve("bad_world.txt").toFile();
+        try (FileWriter fw = new FileWriter(f)) {
+            fw.write("WORLDD;10;1;0;-1\n"); // cabeçalho errado
+        }
+        GameManager gm = new GameManager();
+        assertThrows(InvalidFileException.class, () -> gm.loadGame(f));
+    }
+
 }
