@@ -351,22 +351,31 @@ public class GameManager {
      * - Ou se o Board indica que há alguém na posição final.
      */
     public boolean gameIsOver() {
-        if (board == null) return false;
+        if (board == null) {
+            return false;
+        }
 
-        // vitória normal
-        if (winnerId != null) return true;
-        if (board.temJogadorNaPosicaoFinal()) return true;
+        // venceu
+        if (winnerId != null) {
+            return true;
+        }
 
-        // empate: ninguém pode jogar
-        boolean alguemPodeJogar = false;
+        // alguém chegou ao fim (mesmo que winnerId não tenha sido marcado)
+        if (board.temJogadorNaPosicaoFinal()) {
+            return true;
+        }
+
+        // se TODOS morreram, acabou
+        boolean existeVivo = false;
         for (Player p : players) {
-            if (p.isAlive() && p.isEnabled()) {
-                alguemPodeJogar = true;
+            if (p.isAlive()) {
+                existeVivo = true;
                 break;
             }
         }
-        return !alguemPodeJogar;
+        return !existeVivo;
     }
+
 
 
     /**
