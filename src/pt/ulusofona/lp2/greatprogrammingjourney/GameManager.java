@@ -297,14 +297,13 @@ public class GameManager {
         advanceSkippingDeadPlayers();
 
         Player atual = players.get(currentPlayerIndex);
-
         if (atual == null || !atual.isAlive()) {
             return false;
         }
 
-        // se já está preso antes de jogar, não se move
+        // se está preso, não mexe
         if (!atual.isEnabled()) {
-            valorDadoLancado = nrSpaces; // opcional, mas ok
+            valorDadoLancado = nrSpaces;
             return false;
         }
 
@@ -317,20 +316,22 @@ public class GameManager {
             return false;
         }
 
+        // guarda o dado
         valorDadoLancado = nrSpaces;
 
-        int posAtual = board.getPlayerPosicao(atual.getId());
-        boolean movimentoValido = (posAtual + nrSpaces <= board.getSize());
-
+        // move SEMPRE (Board trata do bounce se ultrapassar)
         board.movePlayer(atual.getId(), nrSpaces);
 
+        // regista vencedor
         int posFinal = board.getPlayerPosicao(atual.getId());
         if (board.posicaoVitoria(posFinal) && winnerId == null) {
             winnerId = atual.getId();
         }
 
-        return movimentoValido;
+        // se mexeu, é um move válido
+        return true;
     }
+
 
 
 
