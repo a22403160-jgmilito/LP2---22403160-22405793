@@ -289,10 +289,17 @@ public class GameManager {
             return false;
         }
 
-        // Se está preso, NÃO pode mover (logo false)
+        // Se está preso
         if (!atual.isEnabled()) {
             valorDadoLancado = nrSpaces;
-            return false;
+
+            // Se o jogo já acabou, não faz sentido aceitar jogadas
+            if (gameIsOver()) {
+                return false;
+            }
+
+            // Se ainda não acabou, aceita para avançar o turno no reactToAbyssOrTool()
+            return true;
         }
 
         String primeiraLing = getPrimeiraLinguagem(atual);
