@@ -19,12 +19,10 @@ public class IDE extends Ferramentas {
 
     @Override
     public boolean podeAnular(Abismos abismo) {
+        if (abismo == null) {
+            return false;
+        }
         int id = abismo.getId();
-
-        // IDEs ajudam com:
-        // - Erro de Sintaxe (0)
-        // - Erro de Lógica (1)
-        // - Código Duplicado (5)
         return id == 0 || id == 1 || id == 3 || id == 5 || id == 8 || id == 9;
     }
 }

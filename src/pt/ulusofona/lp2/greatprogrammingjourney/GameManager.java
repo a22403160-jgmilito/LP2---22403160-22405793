@@ -809,155 +809,90 @@ public class GameManager {
      * - avança turno (currentPlayerIndex) e incrementa totalTurns
      */
     public String reactToAbyssOrTool() {
-        if (board == null || players.isEmpty()) {
-            return null;
-        }
+        if (board == null || players.isEmpty()) return null;
 
-        // garante que o jogador atual não é um morto
         advanceSkippingDeadPlayers();
-
         Player atual = players.get(currentPlayerIndex);
+        if (atual == null || !atual.isAlive()) return null;
 
-        if (atual == null || !atual.isAlive()) {
-            return null;
-        }
-
-        // Se estiver preso: não aplica abismos nem ferramentas, só conta turno e passa a vez
         if (!atual.isEnabled()) {
             String msg = "O programador " + atual.getNome() + " está preso e não pode jogar.";
-
-            // conta turno do jogador mesmo preso
             atual.incrementarTurno();
 
-            // ativa experiência quando TODOS tiverem >=3 turnos
             if (!experienciaAtiva) {
                 boolean todos3 = true;
                 for (Player p : players) {
-                    if (p.getTurnosJogador() < 3) {
-                        todos3 = false;
-                        break;
-                    }
+                    if (p.getTurnosJogador() < 3) { todos3 = false; break; }
                 }
-                if (todos3) {
-                    experienciaAtiva = true;
-                    for (Player p : players) {
-                        p.setExperiente(true);
-                    }
-                }
+                if (todos3) { experienciaAtiva = true; for (Player p : players) p.setExperiente(true); }
             }
 
             totalTurns++;
-
-            // passa a vez (e salta mortos)
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
             advanceSkippingDeadPlayers();
-
             return msg;
         }
 
         int idJogador = atual.getId();
         int pos = board.getPlayerPosicao(idJogador);
 
-        StringBuilder mensagem = new StringBuilder();
-
         boolean casaEspecial =
                 (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length && abismosNaPosicao[pos] != null)
                         || (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length && ferramentasNaPosicao[pos] != null)
                         || (casaTeveFerramenta != null && pos >= 1 && pos < casaTeveFerramenta.length && casaTeveFerramenta[pos]);
 
-        Abismos abismo = null;
-        if (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length) {
-            abismo = abismosNaPosicao[pos];
-        }
+        StringBuilder mensagem = new StringBuilder();
 
+        Abismos abismo = (abismosNaPosicao != null && pos >= 1 && pos < abismosNaPosicao.length) ? abismosNaPosicao[pos] : null;
         if (abismo != null) {
-
             if (abismo.getId() == 8) {
                 String msgCiclo = aplicarCicloInfinito(atual, pos);
                 if (msgCiclo != null && !msgCiclo.isEmpty()) mensagem.append(msgCiclo);
-
             } else if (abismo.getId() == 9) {
                 String msgSeg = aplicarSegmentationFault(pos);
                 if (msgSeg != null && !msgSeg.isEmpty()) mensagem.append(msgSeg);
-
             } else {
                 Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
-
-                // Ajuda do Professor só anula o LLM se o jogador NÃO tiver experiência
-                if (abismo.getId() == 20 && atual.isExperiente() && anuladora instanceof AjudaDoProfessor) {
-                    anuladora = null;
-                }
+                if (abismo.getId() == 20 && atual.isExperiente() && anuladora instanceof AjudaDoProfessor) anuladora = null;
 
                 if (anuladora != null) {
                     atual.removeFerramenta(anuladora);
-                    mensagem.append("O programador ")
-                            .append(atual.getNome())
-                            .append(" usou a ferramenta ")
-                            .append(anuladora.getNome())
-                            .append(" para anular o abismo ")
-                            .append(abismo.getNome())
-                            .append(".");
+                    mensagem.append("O programador ").append(atual.getNome())
+                            .append(" usou a ferramenta ").append(anuladora.getNome())
+                            .append(" para anular o abismo ").append(abismo.getNome()).append(".");
                 } else {
                     String msgAbismo = abismo.aplicarEfeito(atual, board, valorDadoLancado);
                     if (msgAbismo != null && !msgAbismo.isEmpty()) mensagem.append(msgAbismo);
                 }
             }
-
         } else {
-            Ferramentas ferramenta = null;
-            if (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) {
-                ferramenta = ferramentasNaPosicao[pos];
-            }
-
+            Ferramentas ferramenta = (ferramentasNaPosicao != null && pos >= 1 && pos < ferramentasNaPosicao.length) ? ferramentasNaPosicao[pos] : null;
             if (ferramenta != null && !atual.temFerramentaComId(ferramenta.getId())) {
                 atual.adicionarFerramenta(ferramenta);
-                mensagem.append("O programador ")
-                        .append(atual.getNome())
-                        .append(" apanhou a ferramenta ")
-                        .append(ferramenta.getNome())
-                        .append(".");
+                mensagem.append("O programador ").append(atual.getNome())
+                        .append(" apanhou a ferramenta ").append(ferramenta.getNome()).append(".");
             }
         }
 
         int novaPos = board.getPlayerPosicao(idJogador);
-        if (board.posicaoVitoria(novaPos) && winnerId == null) {
-            winnerId = idJogador;
-        }
+        if (board.posicaoVitoria(novaPos) && winnerId == null) winnerId = idJogador;
 
         atual.incrementarTurno();
-
         if (!experienciaAtiva) {
             boolean todos3 = true;
             for (Player p : players) {
-                if (p.getTurnosJogador() < 3) {
-                    todos3 = false;
-                    break;
-                }
+                if (p.getTurnosJogador() < 3) { todos3 = false; break; }
             }
-            if (todos3) {
-                experienciaAtiva = true;
-                for (Player p : players) {
-                    p.setExperiente(true);
-                }
-            }
+            if (todos3) { experienciaAtiva = true; for (Player p : players) p.setExperiente(true); }
         }
 
         totalTurns++;
-
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         advanceSkippingDeadPlayers();
 
-        if (gameIsOver()) {
-            return mensagem.length() == 0 ? (casaEspecial ? "" : null) : mensagem.toString();
-        }
-
-        if (mensagem.length() == 0) {
-            return casaEspecial ? "" : null;
-        }
+        if (mensagem.length() == 0) return casaEspecial ? "" : null;
         return mensagem.toString();
     }
-
-
 
     // =========================================================
     // SAVE GAME

@@ -19,8 +19,9 @@ public class TratamentoDeExcepcoes extends Ferramentas {
 
     @Override
     public boolean podeAnular(Abismos abismo) {
-        // Anula abismos relacionados com excepções reais:
-        // Exception (ID 2) e FileNotFoundException (ID 3)
+        if (abismo == null) {
+            return false;
+        }
         int id = abismo.getId();
         return id == 2 || id == 3 || id == 4;
     }
