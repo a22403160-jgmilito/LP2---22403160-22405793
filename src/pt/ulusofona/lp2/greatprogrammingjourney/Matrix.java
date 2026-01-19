@@ -19,7 +19,9 @@ public class Matrix extends Abismos {
 
     // true  => azul = prémio (avançar 3x dado) / vermelho = punição (recuar 3x dado)
     // false => azul = punição / vermelho = prémio
-    private boolean azulEhPremio = true;
+    private boolean azulEhPremio;
+    private boolean ordemInicialDefinida = false;
+
 
     // Hook para testes (0 = azul, 1 = vermelho). Se null, usa UI/aleatório.
     private static Integer forcedChoiceForTests = null;
@@ -27,6 +29,13 @@ public class Matrix extends Abismos {
     public static void forceChoiceForTests(Integer choice) {
         forcedChoiceForTests = choice;
     }
+    // --- Apenas para testes ---
+    private static Boolean forceBlueRewardFirstForTests = null;
+
+    public static void forceBlueRewardFirstForTests(Boolean value) {
+        forceBlueRewardFirstForTests = value;
+    }
+
 
     public Matrix() {
         super(10);
@@ -52,6 +61,16 @@ public class Matrix extends Abismos {
 
         int escolha = obterEscolhaPilula(jogador);
         boolean escolheuAzul = (escolha == 0);
+
+        // Definir a ordem inicial só na primeira activação deste abismo
+        if (!ordemInicialDefinida) {
+            if (forceBlueRewardFirstForTests != null) {
+                azulEhPremio = forceBlueRewardFirstForTests;
+            } else {
+                azulEhPremio = ThreadLocalRandom.current().nextBoolean();
+            }
+            ordemInicialDefinida = true;
+        }
 
         int deslocamento = Math.max(0, valorDado) * 3;
         boolean ePremio = escolheuAzul ? azulEhPremio : !azulEhPremio;

@@ -303,17 +303,10 @@ public class GameManager {
             return false;
         }
 
-        // Se está preso
+        // PRESO (Ciclo Infinito): não pode mover => false
         if (!atual.isEnabled()) {
             valorDadoLancado = nrSpaces;
-
-            // Se o jogo já acabou, não faz sentido aceitar jogadas
-            if (gameIsOver()) {
-                return false;
-            }
-
-            // Se ainda não acabou, aceita para avançar o turno no reactToAbyssOrTool()
-            return true;
+            return false;
         }
 
         String primeiraLing = getPrimeiraLinguagem(atual);
@@ -341,6 +334,7 @@ public class GameManager {
 
         return movimentoValido;
     }
+
 
     /**
      * Obtém a “primeira linguagem” do jogador, a partir da string original,
@@ -825,6 +819,43 @@ public class GameManager {
 
         Player atual = players.get(currentPlayerIndex);
 
+        if (atual == null || !atual.isAlive()) {
+            return null;
+        }
+
+        // Se estiver preso: não aplica abismos nem ferramentas, só conta turno e passa a vez
+        if (!atual.isEnabled()) {
+            String msg = "O programador " + atual.getNome() + " está preso e não pode jogar.";
+
+            // conta turno do jogador mesmo preso
+            atual.incrementarTurno();
+
+            // ativa experiência quando TODOS tiverem >=3 turnos
+            if (!experienciaAtiva) {
+                boolean todos3 = true;
+                for (Player p : players) {
+                    if (p.getTurnosJogador() < 3) {
+                        todos3 = false;
+                        break;
+                    }
+                }
+                if (todos3) {
+                    experienciaAtiva = true;
+                    for (Player p : players) {
+                        p.setExperiente(true);
+                    }
+                }
+            }
+
+            totalTurns++;
+
+            // passa a vez (e salta mortos)
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+            advanceSkippingDeadPlayers();
+
+            return msg;
+        }
+
         int idJogador = atual.getId();
         int pos = board.getPlayerPosicao(idJogador);
 
@@ -843,21 +874,21 @@ public class GameManager {
         if (abismo != null) {
 
             if (abismo.getId() == 8) {
-                String msg = aplicarCicloInfinito(atual, pos);
-                if (msg != null && !msg.isEmpty()) mensagem.append(msg);
+                String msgCiclo = aplicarCicloInfinito(atual, pos);
+                if (msgCiclo != null && !msgCiclo.isEmpty()) mensagem.append(msgCiclo);
 
             } else if (abismo.getId() == 9) {
-                String msg = aplicarSegmentationFault(pos);
-                if (msg != null && !msg.isEmpty()) mensagem.append(msg);
+                String msgSeg = aplicarSegmentationFault(pos);
+                if (msgSeg != null && !msgSeg.isEmpty()) mensagem.append(msgSeg);
 
             } else {
                 Ferramentas anuladora = atual.getFerramentaQueAnula(abismo);
 
-                // Ajuda do Professor só anula o LLM se o jogador NÃO tiver experiência.
-                // Se tiver experiência, o LLM tem de aplicar o bónus mesmo com a Ajuda do Professor.
+                // Ajuda do Professor só anula o LLM se o jogador NÃO tiver experiência
                 if (abismo.getId() == 20 && atual.isExperiente() && anuladora instanceof AjudaDoProfessor) {
                     anuladora = null;
                 }
+
                 if (anuladora != null) {
                     atual.removeFerramenta(anuladora);
                     mensagem.append("O programador ")
@@ -914,7 +945,6 @@ public class GameManager {
 
         totalTurns++;
 
-        // passa a vez (e salta mortos)
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         advanceSkippingDeadPlayers();
 
@@ -927,6 +957,7 @@ public class GameManager {
         }
         return mensagem.toString();
     }
+
 
 
     // =========================================================
