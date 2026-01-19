@@ -31,19 +31,18 @@ public class TestBlueScreenOfDeath {
     }
 
     @Test
-    public void test04_AplicarEfeito_MensagemDeveConterNomeETexto() {
+    public void test04_AplicarEfeito_MensagemDeveSerExata() {
         Abismos ab = new BlueScreenOfDeath();
-
         Player p = new Player(2, "Bruno", "C", "Vermelho");
 
         String msg = ab.aplicarEfeito(p, null, 6);
 
-        assertNotNull(msg);
-        assertTrue(msg.contains("Bruno"));
-        assertTrue(msg.contains("Blue Screen of Death"));
-        assertTrue(msg.contains("foi derrotado"));
-        assertTrue(msg.contains("ficando fora do jogo"));
+        assertEquals(
+                "O programador Bruno sofreu um Blue Screen of Death e foi derrotado, ficando fora do jogo.",
+                msg
+        );
     }
+
 
     @Test
     public void test05_AplicarEfeito_DuasVezesContinuaDerrotado() {
@@ -57,4 +56,21 @@ public class TestBlueScreenOfDeath {
         ab.aplicarEfeito(p, null, 1);
         assertFalse(p.isAlive(), "Mesmo aplicando outra vez, deve continuar fora do jogo");
     }
+    @Test
+    public void test06_AplicarEfeito_IgnoraBoardEValorDado() {
+        Abismos ab = new BlueScreenOfDeath();
+        Player p = new Player(10, "Diana", "Kotlin", "Rosa");
+
+        // board null e valor qualquer
+        String msg1 = ab.aplicarEfeito(p, null, 1);
+        assertFalse(p.isAlive());
+
+        // “ressuscitar” só para repetir o efeito (se existir setAlive(true))
+        // Se não existir setAlive(true), cria novo Player:
+        Player p2 = new Player(11, "Diana", "Kotlin", "Rosa");
+        String msg2 = ab.aplicarEfeito(p2, null, 999);
+
+        assertEquals(msg1, msg2);
+    }
+
 }

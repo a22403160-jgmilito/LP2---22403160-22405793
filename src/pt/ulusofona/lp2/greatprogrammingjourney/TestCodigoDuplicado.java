@@ -74,4 +74,39 @@ public class TestCodigoDuplicado {
         assertTrue(msg.contains("Carla"));
         assertTrue(msg.contains("posição 4"));
     }
+    @Test
+    public void test06_AplicarEfeito_MensagemDeveSerExata() {
+        Player p = new Player(10, "Diana", "Kotlin", "Rosa");
+        Board b = new Board(10, List.of(p));
+
+        // anterior = 2, atual = 5
+        p.registarPosicao(2);
+        b.setPlayerPosicao(10, 5);
+        p.registarPosicao(5);
+
+        Abismos ab = new CodigoDuplicado();
+        String msg = ab.aplicarEfeito(p, b, 6);
+
+        assertEquals(2, b.getPlayerPosicao(10));
+        assertEquals(
+                "O programador Diana caiu no abismo Código Duplicado e voltou para a casa anterior (posição 2).",
+                msg
+        );
+    }
+
+    @Test
+    public void test07_AplicarEfeito_PosAnteriorMaiorQueSize_DeveIrPara1() {
+        Player p = new Player(11, "Eva", "C#", "Laranja");
+        Board b = new Board(10, List.of(p));
+
+        // anterior inválida por ser > size
+        p.registarPosicao(999);
+        b.setPlayerPosicao(11, 4);
+        p.registarPosicao(4);
+
+        Abismos ab = new CodigoDuplicado();
+        ab.aplicarEfeito(p, b, 1);
+
+        assertEquals(1, b.getPlayerPosicao(11));
+    }
 }

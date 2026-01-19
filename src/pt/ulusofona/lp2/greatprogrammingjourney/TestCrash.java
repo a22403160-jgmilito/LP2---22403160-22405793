@@ -73,4 +73,41 @@ public class TestCrash {
         assertTrue(msg.contains("Crash"));
         assertTrue(msg.contains("voltou à primeira casa"));
     }
+    @Test
+    public void test06_AplicarEfeito_JogadorNull_DeveRetornarStringVazia() {
+        Abismos ab = new Crash();
+
+        Board b = new Board(10, List.of(new Player(1, "Ana", "Java", "Azul")));
+
+        String msg = ab.aplicarEfeito(null, b, 3);
+
+        assertEquals("", msg);
+    }
+
+    @Test
+    public void test07_AplicarEfeito_BoardNull_DeveRetornarStringVazia() {
+        Abismos ab = new Crash();
+
+        Player p = new Player(1, "Ana", "Java", "Azul");
+
+        String msg = ab.aplicarEfeito(p, null, 3);
+
+        assertEquals("", msg);
+    }
+
+    @Test
+    public void test08_AplicarEfeito_MensagemDeveSerExata() {
+        Abismos ab = new Crash();
+
+        Player p = new Player(4, "Diana", "Kotlin", "Rosa");
+        Board b = new Board(10, List.of(p));
+
+        b.setPlayerPosicao(4, 7);
+
+        String msg = ab.aplicarEfeito(p, b, 1);
+
+        assertEquals(1, b.getPlayerPosicao(4));
+        assertEquals("O programador Diana sofreu um Crash e voltou à primeira casa.", msg);
+    }
+
 }

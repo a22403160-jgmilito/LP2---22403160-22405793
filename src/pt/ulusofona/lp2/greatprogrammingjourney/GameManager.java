@@ -312,10 +312,10 @@ public class GameManager {
         // Restrições por linguagem (mantive como tinhas)
         String primeiraLing = getPrimeiraLinguagem(atual);
 
-        if ("Assembly".equalsIgnoreCase(primeiraLing) && nrSpaces >= 3) {
+        if ("Assembly".equalsIgnoreCase(primeiraLing) && nrSpaces > 3) {
             return false;
         }
-        if ("C".equalsIgnoreCase(primeiraLing) && nrSpaces >= 4) {
+        if ("C".equalsIgnoreCase(primeiraLing) && nrSpaces > 4) {
             return false;
         }
 
